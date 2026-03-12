@@ -3,12 +3,6 @@ import bcrypt from 'bcryptjs'
 import { PrismaClient } from '@prisma/client'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
 
-console.log('User:', process.env.DB_USER)
-console.log('DATABASE_HOST:', process.env.DB_HOST)
-console.log('DATABASE_USER:', process.env.DB_USER)
-console.log('DATABASE_PASSWORD exists:', !!process.env.DB_PASSWORD)
-console.log('DATABASE_NAME:', process.env.DB_NAME)
-
 const adapter = new PrismaMariaDb({
   host: process.env.DB_HOST!,
   user: process.env.DB_USER!,

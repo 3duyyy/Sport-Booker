@@ -2,29 +2,19 @@ import { RefreshToken, User } from '@prisma/client'
 import { prisma } from '../../shared/prisma/client'
 
 export class AuthRepository {
-  static async createUser(data: {
-    email: string
-    passwordHash: string
-    fullName: string
-    phone?: string
-    roleId: number
-  }): Promise<User> {
-    return prisma.user.create({ data, include: { role: true } })
-  }
+  // static async findByEmail(email: string): Promise<User | null> {
+  //   return prisma.user.findUnique({
+  //     where: { email },
+  //     include: { role: true }
+  //   })
+  // }
 
-  static async findByEmail(email: string): Promise<User | null> {
-    return prisma.user.findUnique({
-      where: { email },
-      include: { role: true }
-    })
-  }
-
-  static async findById(id: number): Promise<User | null> {
-    return prisma.user.findUnique({
-      where: { id },
-      include: { role: true }
-    })
-  }
+  // static async findById(id: number): Promise<User | null> {
+  //   return prisma.user.findUnique({
+  //     where: { id },
+  //     include: { role: true }
+  //   })
+  // }
 
   static async saveRefreshToken(data: {
     userId: number

@@ -7,8 +7,7 @@ import { FacilitiesController } from './facilities.controller'
 
 const router = Router()
 
-router.use(authMiddleware, AuthorizationMiddleware.ownerOnly())
-router.post('/facilities', validationMiddleware(CreateFacilityDto), FacilitiesController.createFacility)
+router.use(authMiddleware, AuthorizationMiddleware.ownerOrAdmin())
 router.get('/facilities', FacilitiesController.getMyFacilities)
 router.post('/facilities/:facilityId/fields', validationMiddleware(CreateFieldDto), FacilitiesController.createField)
 router.put('/fields/:fieldId/prices', validationMiddleware(SetFieldPricesDto), FacilitiesController.setFieldPrices)

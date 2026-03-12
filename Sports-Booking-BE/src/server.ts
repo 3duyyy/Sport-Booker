@@ -10,7 +10,15 @@ import { api } from './routes'
 
 const app = express()
 app.use(compression())
-app.use(cors())
+app.use(
+  cors({
+    origin: env.CLIENT_URL,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 200
+  })
+)
 app.use(helmet())
 app.use(express.json())
 app.use(cookieParser())

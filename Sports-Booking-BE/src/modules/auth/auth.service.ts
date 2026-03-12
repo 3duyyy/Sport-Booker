@@ -5,17 +5,18 @@ import { AuthRepository } from './auth.repository'
 import bcrypt from 'bcryptjs'
 import { BcryptUtil } from '../../shared/utils/bcryptUtil'
 import { JwtUtil } from '../../shared/utils/jwt'
+import { UsersRepository } from '../users/users.repository'
 
 export class AuthService {
   static async register(registerDto: RegisterDto) {
-    const existingUser = await AuthRepository.findByEmail(registerDto.email)
+    const existingUser = await UsersRepository.findByEmail(registerDto.email)
     if (existingUser) {
       throw new AppError('Email đã tồn tại!', StatusCodes.BAD_REQUEST)
     }
 
     const passwordHash = await BcryptUtil.hash(registerDto.password)
 
-    const user = await AuthRepository.createUser({
+    const user = await UsersRepository.createUser({
       email: registerDto.email,
       passwordHash,
       fullName: registerDto.fullName,
@@ -42,7 +43,7 @@ export class AuthService {
   }
 
   static async login(loginDto: LoginDto) {
-    const user = await AuthRepository.findByEmail(loginDto.email)
+    const user = await UsersRepository.findByEmail(loginDto.email)
     if (!user) {
       throw new AppError('Email hoặc mật khẩu không chính xác', StatusCodes.UNAUTHORIZED)
     }
@@ -97,7 +98,7 @@ export class AuthService {
       throw new AppError('Hết phiên đăng nhập, vui lòng đăng nhập lại!', StatusCodes.UNAUTHORIZED)
     }
 
-    const user = await AuthRepository.findById(payload.id)
+    const user = await UsersRepository.findById(payload.id)
     if (!user) {
       throw new AppError('User không tồn tại', StatusCodes.NOT_FOUND)
     }

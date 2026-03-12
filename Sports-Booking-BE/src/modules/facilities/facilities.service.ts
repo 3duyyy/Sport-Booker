@@ -2,11 +2,18 @@ import { StatusCodes } from 'http-status-codes'
 import { CreateFacilityDto, CreateFieldDto, FacilityQueryDto, SetFieldPricesDto } from '../../dtos/facilities.dto'
 import { AppError } from '../../shared/exceptions'
 import { FacilitiesRepository } from './facilities.repository'
+import { UsersRepository } from '../users/users.repository'
+import { ROLES } from '../../shared/constants/roles'
 
 export class FacilitiesService {
   static async createFacility(ownerId: number, dto: CreateFacilityDto) {
-    const facility = await FacilitiesRepository.createFacility(ownerId, dto)
-    return facility
+    const user = await UsersRepository.findById(ownerId)
+    if (!user) throw new AppError('User không tồn tại', StatusCodes.NOT_FOUND)
+    if (user?.roleId === ROLES.CUSTOMER) {
+      await UsersRepository.upgradeToOwner(ownerId)
+    }
+
+    return FacilitiesRepository.createFacility(ownerId, dto)
   }
 
   static async getMyFacilities(ownerId: number) {

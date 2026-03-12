@@ -16,5 +16,7 @@ export const env = {
   ACCESS_TOKEN_EXPIRES_IN: process.env.ACCESS_TOKEN_EXPIRES_IN,
   REFRESH_TOKEN_EXPIRES_IN: process.env.REFRESH_TOKEN_EXPIRES_IN,
 
-  DATABASE_URL: process.env.DATABASE_URL
+  DATABASE_URL: process.env.DATABASE_URL,
+
+  CLIENT_URL: process.env.CLIENT_URL
 }
