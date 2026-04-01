@@ -1,29 +1,22 @@
 <template>
   <v-app :theme="isDark ? 'dark' : 'light'">
     <!-- Header -->
-    <v-app-bar elevation="1">
-      <v-app-bar-title>Sports Booker</v-app-bar-title>
-      <v-spacer />
-      <v-btn :icon="isDark ? mdiWhiteBalanceSunny : mdiMoonWaningCrescent" @click="toggleDark()" />
-    </v-app-bar>
+    <Header />
 
     <v-main>
-      <v-container fluid>
+      <v-container fluid class="p-0 m-0">
         <slot />
       </v-container>
     </v-main>
 
-    <v-footer elevation="1">
-      <v-container fluid class="d-flex align-center justify-space-between">
-        <span class="text-caption text-medium-emphasis"> © {{ currentYear }} Sports Booking. All rights reserved. </span>
-        <span class="text-caption text-medium-emphasis"> v1.0.0 </span>
-      </v-container>
-    </v-footer>
+    <Footer />
   </v-app>
 </template>
 
 <script setup lang="ts">
 import { mdiWhiteBalanceSunny, mdiMoonWaningCrescent } from "@mdi/js"
+import Footer from "~/components/common/Footer.vue"
+import Header from "~/components/common/Header.vue"
 
 const isDark = useDark()
 const toggleDark = useToggle(isDark)

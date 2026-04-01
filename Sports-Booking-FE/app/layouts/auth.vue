@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import { mdiTrophyOutline } from "@mdi/js"
+</script>
+
 <template>
   <div class="min-h-screen flex">
     <div class="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden">
@@ -14,7 +18,7 @@
         <div
           class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 mb-6 shadow-lg shadow-blue-500/40"
         >
-          <v-icon icon="mdi-trophy-outline" size="40" color="white"></v-icon>
+          <v-icon :icon="mdiTrophyOutline" size="40" color="white"></v-icon>
         </div>
 
         <h1 class="text-5xl font-extrabold text-white mb-4 tracking-tight drop-shadow-md">
