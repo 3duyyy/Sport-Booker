@@ -91,17 +91,18 @@ export class FacilityQueryDto extends PaginationDto {
   q?: string // search theo tên
 
   @IsOptional()
-  @IsString()
-  district?: string
+  @IsArray()
+  @IsString({ each: true })
+  districts?: string[]
 
   @IsOptional()
   @IsString()
   city?: string
 
   @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  sportId?: number
+  @IsArray()
+  @IsNumber({}, { each: true })
+  sportIds?: number[]
 
   @IsOptional()
   @Type(() => Number)

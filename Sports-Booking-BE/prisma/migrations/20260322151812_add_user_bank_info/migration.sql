@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `users` ADD COLUMN `account_holder` VARCHAR(100) NULL,
+    ADD COLUMN `bank_account` VARCHAR(50) NULL,
+    ADD COLUMN `bank_name` VARCHAR(100) NULL;

@@ -44,7 +44,9 @@
 
     <p class="text-center text-gray-600">
       Chưa có tài khoản ?
-      <NuxtLink to="/register" class="font-semibold text-blue-600 hover:text-blue-500 transition-colors">Đăng ký ngay</NuxtLink>
+      <NuxtLink to="/auth/register" class="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
+        >Đăng ký ngay</NuxtLink
+      >
     </p>
   </div>
 </template>

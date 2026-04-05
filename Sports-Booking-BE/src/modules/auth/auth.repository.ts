@@ -1,4 +1,4 @@
-import { RefreshToken, User } from '@prisma/client'
+import { RefreshToken } from '../../../generated/prisma'
 import { prisma } from '../../shared/prisma/client'
 
 export class AuthRepository {

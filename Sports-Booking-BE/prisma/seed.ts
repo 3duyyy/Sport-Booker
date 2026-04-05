@@ -1,7 +1,9 @@
 import 'dotenv/config'
 import bcrypt from 'bcryptjs'
-import { PrismaClient } from '@prisma/client'
+// import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from './../generated/prisma/client'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
+import { ROLES, PERMISSIONS, ROLE_PERMISSIONS } from '../src/shared/constants/roles'
 
 const adapter = new PrismaMariaDb({
   host: process.env.DB_HOST!,
@@ -14,12 +16,15 @@ const adapter = new PrismaMariaDb({
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  const roles = [
-    { id: 1, name: 'admin', description: 'Administrator - Full access' },
-    { id: 2, name: 'owner', description: 'Field Owner - Manage own fields' },
-    { id: 3, name: 'customer', description: 'Customer - Book fields' }
-  ]
+  // ====================== SEED ROLES ======================
+  // Lấy roles từ ROLES constant
+  const roles = Object.entries(ROLES).map(([key, id]) => ({
+    id,
+    name: key.toLowerCase(), // Chuyển ADMIN → "admin", OWNER → "owner"
+    description: `${key} role - ${getRoleDescription(id)}`
+  }))
 
+  // Seed roles
   for (const role of roles) {
     await prisma.role.upsert({
       where: { id: role.id },
@@ -27,30 +32,16 @@ async function main() {
       create: role
     })
   }
+  console.log(`Seeded ${roles.length} roles`)
 
-  const permissions = [
-    { slug: 'manage_users', name: 'Quản lý người dùng' },
+  // ====================== SEED PERMISSIONS ======================
+  // Lấy permissions từ PERMISSIONS constant
+  const permissions = Object.entries(PERMISSIONS).map(([key, slug]) => ({
+    slug,
+    name: getPermissionName(slug) // Chuyển "manage_users" → "Quản lý người dùng"
+  }))
 
-    { slug: 'create_field', name: 'Tạo sân' },
-    { slug: 'update_field', name: 'Cập nhật sân' },
-    { slug: 'delete_field', name: 'Xóa sân' },
-    { slug: 'approve_field', name: 'Phê duyệt sân' },
-
-    { slug: 'create_booking', name: 'Tạo booking' },
-    { slug: 'view_own_bookings', name: 'Xem booking của mình' },
-    { slug: 'view_field_bookings', name: 'Xem booking của sân mình' },
-    { slug: 'view_all_bookings', name: 'Xem tất cả booking' },
-
-    { slug: 'view_own_payments', name: 'Xem payment của mình' },
-    { slug: 'view_field_payments', name: 'Xem payment của sân mình' },
-    { slug: 'view_all_payments', name: 'Xem tất cả payment' },
-    { slug: 'process_refund', name: 'Xử lý hoàn tiền' },
-
-    { slug: 'create_review', name: 'Tạo review' },
-    { slug: 'update_own_review', name: 'Cập nhật review của mình' },
-    { slug: 'delete_review', name: 'Xóa review' }
-  ]
-
+  // Seed permissions
   for (const permission of permissions) {
     await prisma.permission.upsert({
       where: { slug: permission.slug },
@@ -58,57 +49,43 @@ async function main() {
       create: permission
     })
   }
+  console.log(`Seeded ${permissions.length} permissions`)
 
-  const rolePermissionsMap = [
-    {
-      roleId: 1,
-      permissions: [
-        'manage_users',
-        'create_field',
-        'update_field',
-        'delete_field',
-        'approve_field',
-        'create_booking',
-        'view_all_bookings',
-        'view_all_payments',
-        'process_refund',
-        'delete_review'
-      ]
-    },
-    {
-      roleId: 2,
-      permissions: ['create_field', 'update_field', 'create_booking', 'view_field_bookings', 'view_field_payments']
-    },
-    {
-      roleId: 3,
-      permissions: ['create_booking', 'view_own_bookings', 'view_own_payments', 'create_review', 'update_own_review']
-    }
-  ]
+  // ====================== SEED ROLE-PERMISSION MAPPINGS ======================
+  // Xóa tất cả mappings cũ để seed lại
+  await prisma.rolePermission.deleteMany({})
 
-  for (const { roleId, permissions: perms } of rolePermissionsMap) {
-    for (const permSlug of perms) {
-      const permission = await prisma.permission.findUnique({
-        where: { slug: permSlug }
-      })
+  // Seed mappings từ ROLE_PERMISSIONS constant
+  for (const [roleId, permissionSlugs] of Object.entries(ROLE_PERMISSIONS)) {
+    const role = await prisma.role.findUnique({ where: { id: Number(roleId) } })
+    if (!role) continue
 
-      if (permission) {
-        await prisma.rolePermission.upsert({
-          where: {
-            roleId_permissionId: {
-              roleId,
-              permissionId: permission.id
-            }
-          },
-          update: {},
-          create: {
-            roleId,
-            permissionId: permission.id
+    // Lấy tất cả permission IDs tương ứng với slugs
+    const permissions = await prisma.permission.findMany({
+      where: { slug: { in: permissionSlugs } },
+      select: { id: true }
+    })
+
+    // Tạo mappings
+    for (const { id: permissionId } of permissions) {
+      await prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: role.id,
+            permissionId
           }
-        })
-      }
+        },
+        update: {},
+        create: {
+          roleId: role.id,
+          permissionId
+        }
+      })
     }
   }
+  console.log('Seeded role-permission mappings')
 
+  // ====================== SEED DEFAULT USERS ======================
   const adminPassword = await bcrypt.hash('Abc@123', 10)
   await prisma.user.upsert({
     where: { email: 'admin@sportsbooking.com' },
@@ -117,10 +94,13 @@ async function main() {
       email: 'admin@sportsbooking.com',
       passwordHash: adminPassword,
       fullName: 'System Administrator',
-      phone: '0123456789',
-      roleId: 1,
+      phone: '0974925573',
+      roleId: ROLES.ADMIN,
       status: 'active',
-      isVerified: true
+      isVerified: true,
+      bankName: 'MB Bank',
+      bankAccount: '0974925573',
+      accountHolder: 'NGUYEN BA DUY'
     }
   })
 
@@ -133,9 +113,12 @@ async function main() {
       passwordHash: ownerPassword,
       fullName: 'Test Field Owner',
       phone: '0987654321',
-      roleId: 2,
+      roleId: ROLES.OWNER,
       status: 'active',
-      isVerified: true
+      isVerified: true,
+      bankName: 'Techcombank',
+      bankAccount: '987654321',
+      accountHolder: 'Nguyễn Văn Owner'
     }
   })
 
@@ -148,11 +131,54 @@ async function main() {
       passwordHash: customerPassword,
       fullName: 'Test Customer',
       phone: '0369258147',
-      roleId: 3,
+      roleId: ROLES.CUSTOMER,
       status: 'active',
-      isVerified: true
+      isVerified: true,
+      bankName: 'MB Bank',
+      bankAccount: '1122334455',
+      accountHolder: 'Lê Văn Khách'
     }
   })
+  console.log('Seeded default users')
+
+  // ====================== HELPER FUNCTIONS ======================
+  function getRoleDescription(roleId: number): string {
+    switch (roleId) {
+      case ROLES.ADMIN:
+        return 'Full access to the system'
+      case ROLES.OWNER:
+        return 'Manage own facilities and bookings'
+      case ROLES.CUSTOMER:
+        return 'Book facilities and manage own bookings'
+      default:
+        return ''
+    }
+  }
+
+  function getPermissionName(slug: string): string {
+    const mapping: Record<string, string> = {
+      manage_users: 'Quản lý người dùng',
+      create_facility: 'Tạo sân',
+      update_facility: 'Cập nhật sân',
+      delete_facility: 'Xóa sân',
+      approve_facility: 'Phê duyệt sân',
+      create_field: 'Tạo sân con',
+      update_field: 'Cập nhật sân con',
+      delete_field: 'Xóa sân con',
+      create_booking: 'Tạo booking',
+      view_own_bookings: 'Xem booking của mình',
+      view_facility_bookings: 'Xem booking của sân mình',
+      view_all_bookings: 'Xem tất cả booking',
+      view_own_payments: 'Xem payment của mình',
+      view_facility_payments: 'Xem payment của sân mình',
+      view_all_payments: 'Xem tất cả payment',
+      process_refund: 'Xử lý hoàn tiền',
+      create_review: 'Tạo review',
+      update_own_review: 'Cập nhật review của mình',
+      delete_review: 'Xóa review'
+    }
+    return mapping[slug] || slug
+  }
 }
 
 main()

@@ -237,3 +237,89 @@ export const ownerCheckInHistoryMock: OwnerCheckInHistoryItem[] = [
     status: "checked_in",
   },
 ]
+
+// Calendar
+import type { OwnerCalendarEventItem, OwnerCalendarFacilityFilterItem } from "~/types/owner"
+
+export const ownerCalendarFacilitiesMock: OwnerCalendarFacilityFilterItem[] = [
+  {
+    id: 1,
+    name: "Sunshine Sports Complex",
+  },
+  {
+    id: 2,
+    name: "Victory Badminton Hub",
+  },
+  {
+    id: 3,
+    name: "Central Tennis Court",
+  },
+]
+
+export const ownerCalendarEventsMock: OwnerCalendarEventItem[] = [
+  {
+    id: "evt-1",
+    title: "Nguyễn Văn An",
+    facilityId: 1,
+    facilityName: "Sunshine Sports Complex",
+    fieldName: "Sân A",
+    start: "2026-04-03T08:00:00",
+    end: "2026-04-03T09:30:00",
+    status: "confirmed",
+    customerName: "Nguyễn Văn An",
+  },
+  {
+    id: "evt-2",
+    title: "Trần Minh Huy",
+    facilityId: 1,
+    facilityName: "Sunshine Sports Complex",
+    fieldName: "Sân B",
+    start: "2026-04-03T09:00:00",
+    end: "2026-04-03T10:00:00",
+    status: "pending",
+    customerName: "Trần Minh Huy",
+  },
+  {
+    id: "evt-3",
+    title: "Bảo trì mặt sân",
+    facilityId: 1,
+    facilityName: "Sunshine Sports Complex",
+    fieldName: "Sân C",
+    start: "2026-04-03T12:00:00",
+    end: "2026-04-03T13:00:00",
+    status: "maintenance",
+  },
+  {
+    id: "evt-4",
+    title: "Công ty TechCorp",
+    facilityId: 2,
+    facilityName: "Victory Badminton Hub",
+    fieldName: "Sân 1",
+    start: "2026-04-03T11:00:00",
+    end: "2026-04-03T12:00:00",
+    status: "confirmed",
+    customerName: "Công ty TechCorp",
+  },
+  {
+    id: "evt-5",
+    title: "Lê Khánh Vy",
+    facilityId: 2,
+    facilityName: "Victory Badminton Hub",
+    fieldName: "Sân 2",
+    start: "2026-04-03T17:00:00",
+    end: "2026-04-03T18:30:00",
+    status: "completed",
+    customerName: "Lê Khánh Vy",
+  },
+  {
+    id: "evt-6",
+    title: "Phạm Quốc Bảo",
+    facilityId: 3,
+    facilityName: "Central Tennis Court",
+    fieldName: "Sân Tennis 1",
+    start: "2026-04-04T08:30:00",
+    end: "2026-04-04T10:00:00",
+    status: "cancelled",
+    customerName: "Phạm Quốc Bảo",
+  },
+]

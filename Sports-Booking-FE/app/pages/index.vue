@@ -25,7 +25,7 @@ const handleBookFacility = (facility: FacilityItem) => {
 }
 
 const handleRegisterOwner = () => {
-  toast.success("Chuyển đến trang đăng ký chủ sân")
+  router.push("/owner")
 }
 
 const handleLearnMore = () => {

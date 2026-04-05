@@ -148,7 +148,7 @@ CREATE TABLE `bookings` (
     `total_price` DECIMAL(15, 2) NOT NULL,
     `deposit_amount` DECIMAL(15, 2) NULL,
     `status` ENUM('pending', 'confirmed', 'completed', 'cancelled', 'rejected') NOT NULL DEFAULT 'pending',
-    `paymentStatus` ENUM('unpaid', 'paid', 'refunded') NOT NULL DEFAULT 'unpaid',
+    `payment_status` ENUM('unpaid', 'paid', 'refunded') NOT NULL DEFAULT 'unpaid',
     `check_in_code` VARCHAR(100) NULL,
     `note` TEXT NULL,
     `rejection_reason` VARCHAR(255) NULL,

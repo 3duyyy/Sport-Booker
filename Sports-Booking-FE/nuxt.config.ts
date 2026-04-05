@@ -59,4 +59,8 @@ export default defineNuxtConfig({
     strict: true,
     typeCheck: true,
   },
+  routeRules: {
+    "/admin": { ssr: false },
+    "/admin/**": { ssr: false },
+  },
 })

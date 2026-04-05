@@ -5,7 +5,79 @@ import { FacilitiesRepository } from './facilities.repository'
 import { UsersRepository } from '../users/users.repository'
 import { ROLES } from '../../shared/constants/roles'
 
+type AvailabilitySlot = {
+  startTime: string
+  endTime: string
+  pricePerHour: string
+  status: 'available' | 'booked'
+}
+
 export class FacilitiesService {
+  private static timeToMinutes(time: string) {
+    const parts = time.split(':')
+
+    if (parts.length !== 2) {
+      throw new Error('Invalid time format')
+    }
+
+    const hour = Number(parts[0])
+    const minute = Number(parts[1])
+
+    if (isNaN(hour) || isNaN(minute)) {
+      throw new AppError('Invalid time value', StatusCodes.BAD_REQUEST)
+    }
+
+    return hour * 60 + minute
+  }
+
+  private static minutesToTime(totalMinutes: number) {
+    const hour = Math.floor(totalMinutes / 60)
+    const minute = totalMinutes % 60
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+  }
+
+  private static buildHourlySlots(
+    pricings: Array<{
+      startTime: string
+      endTime: string
+      pricePerHour: any
+    }>,
+    bookings: Array<{
+      startTime: Date
+      endTime: Date
+    }>
+  ): AvailabilitySlot[] {
+    const slots: AvailabilitySlot[] = []
+
+    for (const pricing of pricings) {
+      const start = this.timeToMinutes(pricing.startTime)
+      const end = this.timeToMinutes(pricing.endTime)
+
+      for (let cursor = start; cursor < end; cursor += 60) {
+        const slotStart = cursor
+        const slotEnd = cursor + 60
+
+        if (slotEnd > end) break
+
+        const isBooked = bookings.some((booking) => {
+          const bookingStart = booking.startTime.getHours() * 60 + booking.endTime.getMinutes()
+          const bookingEnd = booking.endTime.getHours() * 60 + booking.endTime.getMinutes()
+
+          return bookingStart < slotEnd && bookingEnd > slotStart
+        })
+
+        slots.push({
+          startTime: this.minutesToTime(slotStart),
+          endTime: this.minutesToTime(slotEnd),
+          pricePerHour: String(pricing.pricePerHour),
+          status: isBooked ? 'booked' : 'available'
+        })
+      }
+    }
+
+    return slots
+  }
+
   static async createFacility(ownerId: number, dto: CreateFacilityDto) {
     const user = await UsersRepository.findById(ownerId)
     if (!user) throw new AppError('User không tồn tại', StatusCodes.NOT_FOUND)
@@ -48,6 +120,9 @@ export class FacilitiesService {
     return await FacilitiesRepository.findPricingsByField(fieldId)
   }
 
+  static async getFeaturedFacilities() {
+    return await FacilitiesRepository.findFeaturedFacilities()
+  }
   static async getPublicFacilities(query: FacilityQueryDto) {
     return await FacilitiesRepository.findPublicFacilities(query)
   }
@@ -88,25 +163,17 @@ export class FacilitiesService {
     const isWeekend = [0, 6].includes(date.getDay())
 
     return fields.map((field) => {
-      const pricings = field.fieldPricings.filter((p) => p.isWeekend === isWeekend)
-      const slots = pricings.map((pricing) => {
-        const isBooked = field.bookings.some(
-          (b) =>
-            b.startTime.getHours() * 60 + b.startTime.getMinutes() <
-              parseInt(pricing.endTime.split(':')[0]!) * 60 + parseInt(pricing.endTime.split(':')[1]!) &&
-            b.endTime.getHours() * 60 + b.endTime.getMinutes() >
-              parseInt(pricing.startTime.split(':')[0]!) * 60 + parseInt(pricing.startTime.split(':')[1]!)
-        )
-        return {
-          startTime: pricing.startTime,
-          endTime: pricing.endTime,
-          pricePerHour: pricing.pricePerHour,
-          status: isBooked ? 'booked' : 'available'
-        }
-      })
+      const matchedPricings = field.fieldPricings.filter((pricing) => pricing.isWeekend === isWeekend)
+
+      const slots = this.buildHourlySlots(matchedPricings, field.bookings)
+
+      const fromPrice = slots.length > 0 ? Math.min(...slots.map((s) => Number(s.pricePerHour))) : null
+
       return {
         id: field.id,
         name: field.name,
+        description: field.description,
+        fromPrice,
         slots
       }
     })

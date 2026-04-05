@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../../../generated/prisma'
 import { CreateFacilityDto, CreateFieldDto, FacilityQueryDto, PricingSlotDto } from '../../dtos/facilities.dto'
 import { prisma } from '../../shared/prisma/client'
 
@@ -90,24 +90,72 @@ export class FacilitiesRepository {
   }
 
   // ========================== Public ==============================
+  static async findFeaturedFacilities() {
+    const facilities = await prisma.facility.findMany({
+      where: { status: 'active' },
+      include: {
+        sport: {
+          select: { id: true, name: true, iconUrl: true }
+        },
+        facilityImages: {
+          where: { isThumbnail: true }
+        },
+        reviews: {
+          select: { rating: true }
+        },
+        fields: {
+          include: {
+            fieldPricings: true
+          }
+        }
+      }
+    })
+
+    const result = facilities.map(({ reviews, fields, ...f }) => {
+      const allPrices = fields.flatMap((field) => field.fieldPricings.map((p) => Number(p.pricePerHour)))
+
+      const minPrice = allPrices.length ? Math.min(...allPrices) : null
+
+      const avgRating = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : null
+
+      return {
+        ...f,
+        minPrice,
+        avgRating
+      }
+    })
+
+    return result
+      .sort((a, b) => {
+        const ratingA = a.avgRating ?? 0
+        const ratingB = b.avgRating ?? 0
+
+        if (ratingB !== ratingA) return ratingB - ratingA
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      })
+      .slice(0, 8)
+  }
+
   static async findPublicFacilities(query: FacilityQueryDto) {
-    const { q, city, district, page = 1, limit = 10, maxPrice, minPrice, sort, sportId } = query
+    const { q, city, districts, page = 1, limit = 10, maxPrice, minPrice, sort, sportIds } = query
 
     const skip = (page - 1) * limit
 
     const where: Prisma.FacilityWhereInput = {
       status: 'active',
       ...(q && { name: { contains: q } }),
-      ...(district && { district }),
+      ...(districts && districts.length > 0 && { districts: { in: districts } }),
       ...(city && { city }),
-      ...(sportId && { sportId }),
+      ...(sportIds && sportIds.length > 0 && { sportId: { in: sportIds } }),
       ...((minPrice !== undefined || maxPrice !== undefined) && {
         fields: {
           some: {
             fieldPricings: {
               some: {
-                ...(minPrice !== undefined && { pricePerHour: { gte: minPrice } }),
-                ...(maxPrice !== undefined && { pricePerHour: { lte: maxPrice } })
+                pricePerHour: {
+                  ...(minPrice !== undefined ? { gte: minPrice } : {}),
+                  ...(maxPrice !== undefined ? { lte: maxPrice } : {})
+                }
               }
             }
           }

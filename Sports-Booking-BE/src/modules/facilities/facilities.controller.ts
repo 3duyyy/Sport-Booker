@@ -66,6 +66,19 @@ export class FacilitiesController {
     }
   }
 
+  static async getFeaturedFacilities(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await FacilitiesService.getFeaturedFacilities()
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: result
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
   static async getPublicFacilities(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await FacilitiesService.getPublicFacilities(req.query)

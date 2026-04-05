@@ -3,7 +3,7 @@
     <div class="section-header">
       <h2 class="section-title">Cơ sở nổi bật</h2>
 
-      <NuxtLink to="/facilities" class="view-all-link">
+      <NuxtLink to="/search-facilities" class="view-all-link">
         Xem tất cả
         <v-icon :icon="mdiArrowRight" size="18" />
       </NuxtLink>

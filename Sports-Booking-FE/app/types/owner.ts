@@ -83,3 +83,23 @@ export interface OwnerCheckInHistoryItem {
   fieldName: string
   status: "checked_in"
 }
+
+// Calendar
+export interface OwnerCalendarFacilityFilterItem {
+  id: number
+  name: string
+}
+
+export type OwnerCalendarEventStatus = "confirmed" | "pending" | "maintenance" | "completed" | "cancelled"
+
+export interface OwnerCalendarEventItem {
+  id: string
+  title: string
+  facilityId: number
+  facilityName: string
+  fieldName: string
+  start: string
+  end: string
+  status: OwnerCalendarEventStatus
+  customerName?: string
+}

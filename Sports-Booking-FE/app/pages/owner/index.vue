@@ -9,12 +9,7 @@
         class="mb-4"
       />
 
-      <div class="mb-6">
-        <h1 class="text-2xl font-bold text-slate-900 md:text-3xl">Khu vực chủ sân</h1>
-        <p class="mt-2 text-sm text-slate-500">Theo dõi tình hình đặt sân, lịch trong ngày và các chỉ số vận hành quan trọng.</p>
-      </div>
-
-      <div class="mb-6">
+      <div v-if="!isCustomer" class="mb-6">
         <h1 class="text-2xl font-bold text-slate-900 md:text-3xl">
           {{ pageTitle }}
         </h1>
@@ -50,6 +45,12 @@
 
           <OwnerFacilitiesSection v-else-if="activeTab === 'facilities'" :items="facilities" />
 
+          <OwnerCalendarSection
+            v-else-if="activeTab === 'calendar'"
+            :facility-items="calendarFacilities"
+            :event-items="calendarEvents"
+          />
+
           <OwnerCheckInSection
             v-else-if="activeTab === 'checkin'"
             :booking-items="checkInBookings"
@@ -70,7 +71,14 @@
 
 <script setup lang="ts">
 import AppBreadcrumbs from "~/components/common/AppBreadcrumbs.vue"
-import { ownerCheckInBookingsMock, ownerCheckInHistoryMock, ownerFacilitiesMock, ownerOverviewMock } from "~/mockData/owner.mock"
+import {
+  ownerCalendarEventsMock,
+  ownerCalendarFacilitiesMock,
+  ownerCheckInBookingsMock,
+  ownerCheckInHistoryMock,
+  ownerFacilitiesMock,
+  ownerOverviewMock,
+} from "~/mockData/owner.mock"
 import type { OwnerSidebarKey } from "~/types/owner"
 
 useSeoMeta({
@@ -82,20 +90,26 @@ definePageMeta({
 })
 
 const activeTab = ref<OwnerSidebarKey>("overview")
+const userRoleName = ref<string | null>(null)
 const overviewData = ownerOverviewMock
 const facilities = ownerFacilitiesMock
 const checkInBookings = ownerCheckInBookingsMock
 const checkInHistory = ownerCheckInHistoryMock
+const calendarFacilities = ownerCalendarFacilitiesMock
+const calendarEvents = ownerCalendarEventsMock
 
-const authUser = ref({
-  id: 1,
-  fullName: "Nguyễn Văn A",
-  role: {
-    name: "owner",
-  },
-})
+const getRoleNameFromStorage = () => {
+  if (!import.meta.client) return null
+  try {
+    const raw = localStorage.getItem("user")
+    if (!raw) return null
+    return JSON.parse(raw)?.role?.name ?? null
+  } catch {
+    return null
+  }
+}
 
-const isCustomer = computed(() => authUser.value?.role?.name === "customer")
+const isCustomer = computed(() => userRoleName.value === "customer")
 
 const pageTitle = computed(() => {
   return isCustomer.value ? "Trở thành chủ sân" : "Khu vực chủ sân"
@@ -105,6 +119,10 @@ const pageDescription = computed(() => {
   return isCustomer.value
     ? "Tạo sân đầu tiên để bắt đầu quản lý cơ sở thể thao và vận hành hoạt động kinh doanh của bạn."
     : "Theo dõi tình hình đặt sân, lịch trong ngày và quản lý cơ sở thể thao của bạn."
+})
+
+onMounted(() => {
+  userRoleName.value = getRoleNameFromStorage()
 })
 </script>
 

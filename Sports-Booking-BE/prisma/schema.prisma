@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -42,6 +43,7 @@ enum PaymentStatus {
   unpaid
   paid
   refunded
+  partially_paid
 }
 
 enum TransactionType {
@@ -85,6 +87,9 @@ model User {
   fullName String @map("full_name")
   phone String? @db.VarChar(20)
   avatarUrl String? @map("avatar_url") @db.VarChar(500)
+  bankName String? @map("bank_name") @db.VarChar(100)
+  bankAccount String? @map("bank_account") @db.VarChar(50)
+  accountHolder String? @map("account_holder") @db.VarChar(100)
   status UserStatus @default(active)
   isVerified Boolean @default(false) @map("is_verified")
   createdAt DateTime @default(now()) @map("created_at")
@@ -254,8 +259,9 @@ model Booking {
   totalPrice Decimal @map("total_price") @db.Decimal(15, 2)
   depositAmount Decimal? @map("deposit_amount") @db.Decimal(15, 2)
   status BookingStatus @default(pending)
-  paymentStatus PaymentStatus @default(unpaid)
+  paymentStatus PaymentStatus @default(unpaid) @map("payment_status")
   checkInCode String? @unique @map("check_in_code") @db.VarChar(100)
+  checkedInAt DateTime? @map("checked_in_at") @db.DateTime(0)
   note String? @db.Text
   rejectionReason String? @map("rejection_reason") @db.VarChar(255)
   createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
