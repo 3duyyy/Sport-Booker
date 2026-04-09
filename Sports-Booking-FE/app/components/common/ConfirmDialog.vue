@@ -12,7 +12,14 @@
           {{ cancelText }}
         </v-btn>
 
-        <v-btn :variant="confirmVariant" :color="confirmColor" rounded="lg" class="text-none rounded-md" @click="handleConfirm">
+        <v-btn
+          :variant="confirmVariant"
+          :loading="isLoading"
+          :color="confirmColor"
+          rounded="lg"
+          class="text-none rounded-md"
+          @click="handleConfirm"
+        >
           {{ confirmText }}
         </v-btn>
       </v-card-actions>
@@ -32,6 +39,7 @@ const props = withDefaults(
     confirmColor?: string
     cancelVariant?: "flat" | "text" | "outlined" | "tonal" | "plain"
     confirmVariant?: "flat" | "text" | "outlined" | "tonal" | "plain"
+    isLoading?: boolean
   }>(),
   {
     title: "Xác nhận thao tác",
@@ -42,6 +50,7 @@ const props = withDefaults(
     confirmColor: "error",
     cancelVariant: "flat",
     confirmVariant: "flat",
+    isLoading: false,
   },
 )
 

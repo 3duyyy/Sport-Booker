@@ -86,6 +86,42 @@ export interface AdminTopFacilityItem {
   thumbnail: string
 }
 
+export interface PaginationMeta {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export interface AdminDashboardSummary {
+  totalRevenue: number
+  revenueGrowthPercent: number | null
+  activeBookings: number
+  occupancyRate: number
+  pendingFacilities: number
+  pendingRefunds: number
+}
+
+export interface AdminDashboardActivityApiItem {
+  id: number
+  title: string
+  description: string
+  type: "success" | "neutral" | "danger" | "primary"
+  createdAt: string
+}
+
+export interface AdminDashboardTopFacilitiesResponse {
+  data: AdminTopFacilityItem[]
+  pagination: PaginationMeta
+}
+
+export interface AdminDashboardOverviewResponse {
+  summary: AdminDashboardSummary
+  revenueBySport: AdminRevenueBySportItem[]
+  activities: AdminDashboardActivityApiItem[]
+  topFacilities: AdminDashboardTopFacilitiesResponse
+}
+
 // Users
 export type UserStatus = "active" | "banned" | "pending_approve"
 
@@ -108,6 +144,23 @@ export interface AdminUserFilterForm {
   keyword: string
   role: AdminUserRoleFilter
   status: AdminUserStatusFilter
+}
+
+export interface AdminUsersQueryParams {
+  page?: number
+  limit?: number
+  keyword?: string
+  roleId?: 1 | 2 | 3
+  status?: UserStatus
+  sortBy?: "createdAt" | "fullName"
+  sortOrder?: "asc" | "desc"
+}
+
+export interface AdminUsersListApiResponse {
+  success: boolean
+  data: AdminUserListItem[]
+  pagination: PaginationMeta
+  message?: string
 }
 
 // Facilities
@@ -143,6 +196,39 @@ export interface AdminFacilityFilterForm {
 export interface AdminFacilitySportOption {
   label: string
   value: AdminFacilitySportFilter
+}
+
+export interface AdminFacilitiesQueryParams {
+  page?: number
+  limit?: number
+  keyword?: string
+  sportId?: number
+  performance?: AdminFacilityPerformance
+  sortBy?: "createdAt" | "bookingCount" | "name"
+  sortOrder?: "asc" | "desc"
+}
+
+export interface AdminFacilitiesListApiResponse {
+  success: boolean
+  data: AdminFacilityListItem[]
+  pagination: PaginationMeta
+  message?: string
+}
+
+export interface AdminUpdateFacilityStatusPayload {
+  status: "active" | "inactive"
+}
+
+export interface AdminFacilityStatusUpdateItem {
+  id: number
+  status: FacilityStatus
+  updatedAt: string
+}
+
+export interface AdminFacilityStatusUpdateApiResponse {
+  success: boolean
+  data: AdminFacilityStatusUpdateItem
+  message?: string
 }
 
 // Financial
@@ -239,6 +325,42 @@ export interface RefundRow {
   createdAt: string
 }
 
+export interface AdminFinancialsSummaryApiResponse {
+  success: boolean
+  data: FinancialStats
+  message?: string
+}
+
+export interface AdminPayoutsQueryParams {
+  page?: number
+  limit?: number
+  keyword?: string
+  sortBy?: "createdAt" | "amount"
+  sortOrder?: "asc" | "desc"
+}
+
+export interface AdminRefundsQueryParams {
+  page?: number
+  limit?: number
+  keyword?: string
+  sortBy?: "createdAt" | "amount"
+  sortOrder?: "asc" | "desc"
+}
+
+export interface AdminPayoutsListApiResponse {
+  success: boolean
+  data: PayoutRow[]
+  pagination: PaginationMeta
+  message?: string
+}
+
+export interface AdminRefundsListApiResponse {
+  success: boolean
+  data: RefundRow[]
+  pagination: PaginationMeta
+  message?: string
+}
+
 // Payments
 export type PaymentVerificationRowStatus = "pending" | "approved" | "rejected"
 export type PaymentVerificationKind = "full_payment" | "deposit"
@@ -255,4 +377,81 @@ export interface PaymentVerificationRow {
   amount: number
   status: PaymentVerificationRowStatus
   transferredAt: string
+}
+
+export interface AdminPaymentVerificationsQueryParams {
+  page?: number
+  limit?: number
+  keyword?: string
+  status?: PaymentVerificationRowStatus
+  verificationType?: PaymentVerificationKind
+  sortBy?: "transferredAt" | "amount"
+  sortOrder?: "asc" | "desc"
+}
+
+export interface AdminPaymentVerificationsListApiResponse {
+  success: boolean
+  data: PaymentVerificationRow[]
+  pagination: PaginationMeta
+  message?: string
+}
+
+export interface AdminRejectPaymentVerificationPayload {
+  reason?: string
+}
+
+// User form
+export type AdminUserFormMode = "create" | "edit" | "view"
+
+export interface AdminUserDetailItem extends AdminUserListItem {
+  updatedAt: string
+}
+
+export interface AdminCreateUserPayload {
+  roleId: 1 | 2 | 3
+  email: string
+  fullName: string
+  password: string
+  phone?: string
+  avatarUrl?: string
+  status: UserStatus
+  isVerified: boolean
+}
+
+export interface AdminUpdateUserPayload {
+  roleId?: 1 | 2 | 3
+  email?: string
+  fullName?: string
+  password?: string
+  phone?: string | null
+  avatarUrl?: string | null
+  status?: UserStatus
+  isVerified?: boolean
+}
+
+export interface AdminUserDetailApiResponse {
+  success: boolean
+  data: AdminUserDetailItem
+  message?: string
+}
+
+export interface AdminUserUpsertApiResponse {
+  success: boolean
+  data: AdminUserDetailItem
+  message?: string
+}
+
+export interface AdminUserFormValue {
+  roleId: 1 | 2 | 3
+  email: string
+  fullName: string
+  password: string
+  phone: string
+  avatarUrl: string
+  status: UserStatus
+  isVerified: boolean
+}
+
+export interface AdminUpdateUserStatusPayload {
+  status: "active" | "banned"
 }

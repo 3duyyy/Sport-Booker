@@ -9,7 +9,17 @@ export default defineNuxtRouteMiddleware(async () => {
     return navigateTo("/")
   }
 
-  if (!authStore.isAuthenticated || authStore.user?.roleId !== 1) {
+  let roleId: number | undefined = authStore.user?.roleId
+  if (roleId === undefined) {
+    try {
+      const rawUser = localStorage.getItem("user")
+      if (rawUser) roleId = (JSON.parse(rawUser) as { roleId?: number }).roleId
+    } catch {
+      roleId = undefined
+    }
+  }
+
+  if (roleId !== 1) {
     return navigateTo("/")
   }
 })

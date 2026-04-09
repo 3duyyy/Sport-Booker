@@ -31,7 +31,7 @@
         </thead>
 
         <tbody>
-          <tr v-for="facility in paginatedItems" :key="facility.id">
+          <tr v-for="facility in items" :key="facility.id">
             <td>
               <div class="facility-cell">
                 <v-avatar size="42" rounded="lg">
@@ -71,7 +71,7 @@
             </td>
           </tr>
 
-          <tr v-if="!paginatedItems.length">
+          <tr v-if="!items.length">
             <td colspan="6" class="dashboard-table__empty">Chưa có dữ liệu cơ sở</td>
           </tr>
         </tbody>
@@ -80,9 +80,18 @@
       <v-divider class="mt-2" />
 
       <div class="dashboard-pagination">
-        <div class="dashboard-pagination__text">Hiển thị {{ startItem }} - {{ endItem }} trên tổng {{ props.items.length }} cơ sở</div>
+        <div class="dashboard-pagination__text">
+          Hiển thị {{ startItem }} - {{ endItem }} trên tổng {{ pagination.total }} cơ sở
+        </div>
 
-        <v-pagination v-model="page" :length="totalPages" :total-visible="5" rounded="circle" density="comfortable" />
+        <v-pagination
+          :model-value="pagination.page"
+          :length="pagination.totalPages"
+          :total-visible="5"
+          rounded="circle"
+          density="comfortable"
+          @update:model-value="emit('change-page', $event)"
+        />
       </div>
     </v-card-text>
   </v-card>
@@ -90,42 +99,25 @@
 
 <script setup lang="ts">
 import { mdiFormatListBulleted, mdiStar, mdiViewGridOutline } from "@mdi/js"
-import type { AdminTopFacilityItem } from "~/types/admin"
+import type { AdminTopFacilityItem, PaginationMeta } from "~/types/admin"
 
 const props = defineProps<{
   items: AdminTopFacilityItem[]
+  pagination: PaginationMeta
 }>()
 
-const page = ref(1)
-const itemsPerPage = 5
-
-const totalPages = computed(() => {
-  return Math.max(1, Math.ceil(props.items.length / itemsPerPage))
-})
-
-const paginatedItems = computed(() => {
-  const start = (page.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return props.items.slice(start, end)
-})
+const emit = defineEmits<{
+  (e: "change-page", value: number): void
+}>()
 
 const startItem = computed(() => {
-  if (!props.items.length) return 0
-  return (page.value - 1) * itemsPerPage + 1
+  if (!props.pagination.total) return 0
+  return (props.pagination.page - 1) * props.pagination.limit + 1
 })
 
 const endItem = computed(() => {
-  return Math.min(page.value * itemsPerPage, props.items.length)
+  return Math.min(props.pagination.page * props.pagination.limit, props.pagination.total)
 })
-
-watch(
-  () => props.items.length,
-  () => {
-    if (page.value > totalPages.value) {
-      page.value = totalPages.value
-    }
-  },
-)
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("vi-VN", {

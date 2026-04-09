@@ -7,7 +7,7 @@
             <tr>
               <th>Mã booking</th>
               <th>Khách hàng</th>
-              <th>Sân & khu vực</th>
+              <th>Sân và khu vực</th>
               <th>Loại thanh toán</th>
               <th class="text-right">Số tiền</th>
               <th class="text-center">Trạng thái</th>
@@ -17,7 +17,7 @@
           </thead>
 
           <tbody>
-            <tr v-for="item in paginatedRows" :key="item.id">
+            <tr v-for="item in rows" :key="item.id">
               <td>
                 <div class="font-weight-bold text-slate-900">#BK-{{ item.bookingId }}</div>
                 <div class="text-caption text-slate-500">GD #{{ item.transactionId }}</div>
@@ -85,7 +85,9 @@
                     rounded="lg"
                     class="text-none"
                     size="small"
-                    :disabled="item.status !== 'pending'"
+                    :loading="approvingId === item.transactionId"
+                    :disabled="!isPending(item) || rejectingId === item.transactionId"
+                    @click="$emit('approve', item)"
                   >
                     Duyệt
                   </v-btn>
@@ -96,7 +98,9 @@
                     rounded="lg"
                     class="text-none"
                     size="small"
-                    :disabled="item.status !== 'pending'"
+                    :loading="rejectingId === item.transactionId"
+                    :disabled="!isPending(item) || approvingId === item.transactionId"
+                    @click="$emit('reject', item)"
                   >
                     Từ chối
                   </v-btn>
@@ -104,19 +108,11 @@
               </td>
             </tr>
 
-            <tr v-if="!paginatedRows.length">
+            <tr v-if="!rows.length">
               <td colspan="8" class="text-center py-6 text-slate-500">Chưa có dữ liệu xác minh thanh toán</td>
             </tr>
           </tbody>
         </v-table>
-      </div>
-
-      <v-divider />
-
-      <div class="d-flex align-center justify-space-between px-5 py-4 flex-wrap ga-3">
-        <div class="text-body-2 text-slate-500">Hiển thị {{ startItem }} - {{ endItem }} trên tổng {{ rows.length }} yêu cầu</div>
-
-        <v-pagination v-model="page" :length="totalPages" :total-visible="5" rounded="circle" density="comfortable" />
       </div>
     </v-card-text>
   </v-card>
@@ -125,40 +121,18 @@
 <script setup lang="ts">
 import type { PaymentVerificationRow } from "~/types/admin"
 
-const props = defineProps<{
+defineProps<{
   rows: PaymentVerificationRow[]
+  approvingId: number | null
+  rejectingId: number | null
 }>()
 
-const page = ref(1)
-const itemsPerPage = 5
+defineEmits<{
+  (e: "approve", row: PaymentVerificationRow): void
+  (e: "reject", row: PaymentVerificationRow): void
+}>()
 
-const totalPages = computed(() => {
-  return Math.max(1, Math.ceil(props.rows.length / itemsPerPage))
-})
-
-const paginatedRows = computed(() => {
-  const start = (page.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return props.rows.slice(start, end)
-})
-
-const startItem = computed(() => {
-  if (!props.rows.length) return 0
-  return (page.value - 1) * itemsPerPage + 1
-})
-
-const endItem = computed(() => {
-  return Math.min(page.value * itemsPerPage, props.rows.length)
-})
-
-watch(
-  () => props.rows.length,
-  () => {
-    if (page.value > totalPages.value) {
-      page.value = totalPages.value
-    }
-  },
-)
+const isPending = (row: PaymentVerificationRow) => row.status === "pending"
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("vi-VN", {

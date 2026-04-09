@@ -5,11 +5,15 @@
       <p class="admin-users-header__desc">Quản lý tài khoản trong hệ thống</p>
     </div>
 
-    <v-btn color="success" rounded="lg" class="text-none"> + Thêm mới </v-btn>
+    <v-btn color="success" rounded="lg" class="text-none" @click="emit('create')"> + Thêm mới </v-btn>
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+const emit = defineEmits<{
+  (e: "create"): void
+}>()
+</script>
 
 <style scoped>
 .admin-users-header {

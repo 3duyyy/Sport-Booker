@@ -14,6 +14,12 @@
       </div>
     </div>
 
+    <v-alert v-if="isError" type="error" variant="tonal" class="mb-4">
+      {{ String(error) }}
+    </v-alert>
+
+    <AppLoading v-if="isLoading" title="Đang tải..." description="Hệ thống đang lấy dữ liệu mới nhất" />
+
     <DashboardStats :items="stats" />
 
     <section class="dashboard-grid">
@@ -21,54 +27,52 @@
       <DashboardActivityList :items="activities" />
     </section>
 
-    <DashboardTopFacilitiesTable :items="topFacilities" />
+    <DashboardTopFacilitiesTable
+      :items="topFacilities"
+      :pagination="topFacilitiesPagination"
+      @change-page="onTopFacilityPageChange"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue"
-import { mdiDownload } from "@mdi/js"
+import { computed, ref } from "vue"
+import dayjs from "dayjs"
+import { mdiAlertCircleOutline, mdiBankTransferOut, mdiCheckCircleOutline, mdiDownload, mdiSoccer } from "@mdi/js"
 import DashboardActivityList from "~/components/admin/dashboard/DashboardActivityList.vue"
 import DashboardRevenueChart from "~/components/admin/dashboard/DashboardRevenueChart.vue"
 import DashboardStats from "~/components/admin/dashboard/DashboardStats.vue"
 import DashboardTopFacilitiesTable from "~/components/admin/dashboard/DashboardTopFacilitiesTable.vue"
-import {
-  adminDashboardActivitiesMock,
-  adminDashboardBookingsMock,
-  adminDashboardFacilitiesMock,
-  adminDashboardRefundRequestsMock,
-  adminDashboardReviewsMock,
-  adminDashboardSportsMock,
-  adminDashboardTransactionsMock,
-  adminDashboardUsersMock,
-} from "~/mockData/admin.mock"
-import type { AdminDashboardStatItem, AdminRevenueBySportItem, AdminTopFacilityItem } from "~/types/admin"
+import { useAdminDashboardQuery } from "~/composables/queries/admin/useAdminDashboardQueries"
+import type {
+  AdminActivityItem,
+  AdminDashboardStatItem,
+  AdminRevenueBySportItem,
+  AdminTopFacilityItem,
+  PaginationMeta,
+} from "~/types/admin"
+import AppLoading from "~/components/common/AppLoading.vue"
 
 definePageMeta({
   layout: "admin",
   middleware: "admin",
 })
 
-const totalRevenue = computed(() => {
-  return adminDashboardTransactionsMock.filter((item) => item.status === "success").reduce((sum, item) => sum + item.amount, 0)
-})
+const days = ref(30)
+const topPage = ref(1)
+const topLimit = ref(5)
+const activityLimit = ref(5)
+const topSearch = ref("")
 
-const activeBookings = computed(() => {
-  return adminDashboardBookingsMock.filter((item) => item.status === "pending" || item.status === "confirmed").length
-})
+const queryParams = computed(() => ({
+  days: days.value,
+  topPage: topPage.value,
+  topLimit: topLimit.value,
+  activityLimit: activityLimit.value,
+  topSearch: topSearch.value,
+}))
 
-const occupancyRate = computed(() => {
-  if (adminDashboardBookingsMock.length === 0) return 0
-  return Math.round((activeBookings.value / adminDashboardBookingsMock.length) * 100)
-})
-
-const pendingFacilities = computed(() => {
-  return adminDashboardFacilitiesMock.filter((item) => item.status === "pending_approve").length
-})
-
-const pendingRefunds = computed(() => {
-  return adminDashboardRefundRequestsMock.filter((item) => item.status === "pending").length
-})
+const { data, isLoading, isError, error } = useAdminDashboardQuery(queryParams)
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -78,101 +82,83 @@ const formatCurrency = (value: number) => {
   }).format(value)
 }
 
-const stats = computed<AdminDashboardStatItem[]>(() => [
-  {
-    key: "revenue",
-    label: "Tổng doanh thu",
-    value: formatCurrency(totalRevenue.value),
-    subText: "+12.4% so với tháng trước",
-    tone: "primary",
-  },
-  {
-    key: "active-bookings",
-    label: "Lượt đặt đang hoạt động",
-    value: activeBookings.value,
-    subText: `${occupancyRate.value}% booking đang ở trạng thái pending / confirmed`,
-    tone: "default",
-  },
-  {
-    key: "pending-facilities",
-    label: "Sân chờ duyệt",
-    value: pendingFacilities.value,
-    subText: "Cần admin xem xét",
-    tone: "error",
-  },
-  {
-    key: "pending-refunds",
-    label: "Yêu cầu hoàn tiền",
-    value: pendingRefunds.value,
-    subText: "Đang chờ xử lý",
-    tone: "default",
-  },
-])
+const stats = computed<AdminDashboardStatItem[]>(() => {
+  const summary = data.value?.summary
+  if (!summary) return []
 
-const revenueBySport = computed<AdminRevenueBySportItem[]>(() => {
-  const revenueMap = adminDashboardSportsMock.map((sport) => {
-    const sportFacilityIds = adminDashboardFacilitiesMock
-      .filter((facility) => facility.sportId === sport.id)
-      .map((facility) => facility.id)
+  const growthText =
+    summary.revenueGrowthPercent === null
+      ? "Chưa có dữ liệu kỳ trước"
+      : `${summary.revenueGrowthPercent > 0 ? "+" : ""}${summary.revenueGrowthPercent}% so với kỳ trước`
 
-    const sportBookingIds = adminDashboardBookingsMock
-      .filter((booking) => sportFacilityIds.includes(booking.facilityId))
-      .map((booking) => booking.id)
+  return [
+    {
+      key: "revenue",
+      label: "Tổng doanh thu",
+      value: formatCurrency(summary.totalRevenue),
+      subText: growthText,
+      tone: "primary",
+    },
+    {
+      key: "active-bookings",
+      label: "Lượt đặt đang hoạt động",
+      value: summary.activeBookings,
+      subText: `${summary.occupancyRate}% booking đang ở trạng thái pending / confirmed`,
+      tone: "default",
+    },
+    {
+      key: "pending-facilities",
+      label: "Sân chờ duyệt",
+      value: summary.pendingFacilities,
+      subText: "Cần admin xem xét",
+      tone: "error",
+    },
+    {
+      key: "pending-refunds",
+      label: "Yêu cầu hoàn tiền",
+      value: summary.pendingRefunds,
+      subText: "Đang chờ xử lý",
+      tone: "default",
+    },
+  ]
+})
 
-    const revenue = adminDashboardTransactionsMock
-      .filter((transaction) => transaction.status === "success" && sportBookingIds.includes(transaction.bookingId))
-      .reduce((sum, item) => sum + item.amount, 0)
+const revenueBySport = computed<AdminRevenueBySportItem[]>(() => data.value?.revenueBySport ?? [])
 
-    return {
-      sportId: sport.id,
-      sportName: sport.name,
-      revenue,
+const activityIconMap = {
+  success: mdiCheckCircleOutline,
+  neutral: mdiSoccer,
+  danger: mdiAlertCircleOutline,
+  primary: mdiBankTransferOut,
+} as const
+
+const activities = computed<AdminActivityItem[]>(() =>
+  (data.value?.activities ?? []).map((item) => ({
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    time: dayjs(item.createdAt).fromNow(),
+    type: item.type,
+    icon: activityIconMap[item.type],
+  })),
+)
+
+const topFacilities = computed<AdminTopFacilityItem[]>(() => data.value?.topFacilities.data ?? [])
+
+const topFacilitiesPagination = computed<PaginationMeta>(() => {
+  return (
+    data.value?.topFacilities.pagination ?? {
+      page: 1,
+      limit: topLimit.value,
+      total: 0,
+      totalPages: 1,
     }
-  })
-
-  const total = revenueMap.reduce((sum, item) => sum + item.revenue, 0)
-
-  return revenueMap.map((item) => ({
-    ...item,
-    percent: total > 0 ? Math.round((item.revenue / total) * 100) : 0,
-  }))
+  )
 })
 
-const activities = computed(() => adminDashboardActivitiesMock)
-
-const topFacilities = computed<AdminTopFacilityItem[]>(() => {
-  return adminDashboardFacilitiesMock
-    .filter((facility) => facility.status !== "inactive")
-    .map((facility) => {
-      const owner = adminDashboardUsersMock.find((user) => user.id === facility.ownerId)
-      const sport = adminDashboardSportsMock.find((item) => item.id === facility.sportId)
-
-      const facilityBookings = adminDashboardBookingsMock.filter((booking) => booking.facilityId === facility.id)
-      const facilityBookingIds = facilityBookings.map((booking) => booking.id)
-
-      const revenue = adminDashboardTransactionsMock
-        .filter((transaction) => transaction.status === "success" && facilityBookingIds.includes(transaction.bookingId))
-        .reduce((sum, item) => sum + item.amount, 0)
-
-      const facilityReviews = adminDashboardReviewsMock.filter((review) => review.facilityId === facility.id)
-
-      const rating =
-        facilityReviews.length > 0 ? facilityReviews.reduce((sum, item) => sum + item.rating, 0) / facilityReviews.length : 0
-
-      return {
-        id: facility.id,
-        name: facility.name,
-        ownerName: owner?.fullName || "Chưa rõ",
-        sportName: sport?.name || "Chưa rõ",
-        location: `${facility.district}, ${facility.city}`,
-        bookingCount: facilityBookings.length,
-        revenue,
-        rating,
-        thumbnail: facility.thumbnail,
-      }
-    })
-    .sort((a, b) => b.revenue - a.revenue)
-})
+const onTopFacilityPageChange = (page: number) => {
+  topPage.value = page
+}
 </script>
 
 <style scoped>

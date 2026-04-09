@@ -84,7 +84,7 @@
 
             <td>
               <div class="actions">
-                <v-tooltip text="Xem chi tiết" location="top" open-delay="80">
+                <!-- <v-tooltip text="Xem chi tiết" location="top" open-delay="80">
                   <template #activator="{ props }">
                     <v-btn v-bind="props" icon size="small" variant="text">
                       <v-icon size="18">{{ mdiEyeOutline }}</v-icon>
@@ -98,20 +98,24 @@
                       <v-icon size="18">{{ mdiPencilOutline }}</v-icon>
                     </v-btn>
                   </template>
-                </v-tooltip>
+                </v-tooltip> -->
 
-                <v-tooltip
-                  :text="facility.status === 'inactive' ? 'Kích hoạt lại cơ sở' : 'Tạm ngưng cơ sở'"
-                  location="top"
-                  open-delay="80"
-                >
+                <v-tooltip :text="getToggleTooltip(facility.status)" location="top" open-delay="80">
                   <template #activator="{ props }">
                     <v-btn
                       v-bind="props"
                       icon
                       size="small"
                       variant="text"
+                      :disabled="!canToggleStatus(facility.status)"
                       :color="facility.status === 'inactive' ? 'success' : 'error'"
+                      @click="
+                        emit('toggle-status-request', {
+                          facilityId: facility.id,
+                          currentStatus: facility.status,
+                          facilityName: facility.name,
+                        })
+                      "
                     >
                       <v-icon size="18">
                         {{ facility.status === "inactive" ? mdiCheckCircleOutline : mdiPower }}
@@ -133,11 +137,15 @@
 </template>
 
 <script setup lang="ts">
-import { mdiCheckCircleOutline, mdiEyeOutline, mdiPencilOutline, mdiPower } from "@mdi/js"
+import { mdiCheckCircleOutline, mdiPower } from "@mdi/js"
 import type { AdminFacilityListItem, AdminFacilityPerformance, FacilityStatus } from "~/types/admin"
 
 defineProps<{
   items: AdminFacilityListItem[]
+}>()
+
+const emit = defineEmits<{
+  (e: "toggle-status-request", payload: { facilityId: number; currentStatus: FacilityStatus; facilityName: string }): void
 }>()
 
 const fallbackThumbnail = "https://ui-avatars.com/api/?name=Facility&background=E2E8F0&color=334155"
@@ -164,6 +172,13 @@ const getPerformanceColor = (performance: AdminFacilityPerformance) => {
   if (performance === "high") return "success"
   if (performance === "normal") return "info"
   return "error"
+}
+
+const canToggleStatus = (status: FacilityStatus) => status !== "pending_approve"
+
+const getToggleTooltip = (status: FacilityStatus) => {
+  if (status === "pending_approve") return "Cơ sở đang chờ duyệt"
+  return status === "inactive" ? "Kích hoạt lại cơ sở" : "Tạm ngưng cơ sở"
 }
 </script>
 

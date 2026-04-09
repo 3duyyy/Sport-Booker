@@ -3,10 +3,20 @@
     <v-card-text class="pa-0">
       <div class="px-5 pt-5 pb-3">
         <div class="text-h6 font-weight-bold text-slate-900">Chi trả cho chủ sân</div>
-
         <div class="text-body-2 text-slate-500 mt-1">
           Danh sách booking đã thanh toán, sẵn sàng đối soát và chi trả cho chủ sân.
         </div>
+
+        <v-text-field
+          class="mt-3"
+          label="Tìm theo chủ sân, cơ sở, mã booking"
+          variant="outlined"
+          density="comfortable"
+          hide-details
+          clearable
+          :model-value="keyword"
+          @update:model-value="$emit('update:keyword', String($event ?? ''))"
+        />
       </div>
 
       <v-divider />
@@ -26,12 +36,8 @@
           <tbody>
             <tr v-for="item in rows" :key="item.id">
               <td>
-                <div class="font-weight-bold text-slate-900">
-                  {{ item.ownerName }}
-                </div>
-                <div class="text-body-2 text-slate-500 mt-1">
-                  {{ item.facilityName }}
-                </div>
+                <div class="font-weight-bold text-slate-900">{{ item.ownerName }}</div>
+                <div class="text-body-2 text-slate-500 mt-1">{{ item.facilityName }}</div>
               </td>
 
               <td class="font-weight-medium text-slate-700">
@@ -39,18 +45,16 @@
               </td>
 
               <td>
-                <div class="text-slate-800">
-                  {{ item.bankName }}
-                </div>
+                <div class="text-slate-800">{{ item.bankName }}</div>
                 <div class="text-body-2 text-slate-500 mt-1">{{ item.bankAccount }} - {{ item.accountHolder }}</div>
               </td>
 
               <td class="text-right font-weight-bold text-slate-900">
-                {{ formatAdminCurrency(item.payoutAmount) }}
+                {{ formatCurrency(item.payoutAmount) }}
               </td>
 
               <td class="text-center">
-                <v-btn color="primary" variant="flat" rounded="lg" class="text-none" size="small"> Thực hiện chi trả </v-btn>
+                <v-btn color="error" variant="flat" rounded="lg" class="text-none" size="small">Xác nhận chi trả</v-btn>
               </td>
             </tr>
 
@@ -60,17 +64,59 @@
           </tbody>
         </v-table>
       </div>
+
+      <v-divider />
+
+      <div class="d-flex align-center justify-space-between px-5 py-4 flex-wrap ga-3">
+        <div class="text-body-2 text-slate-500">
+          Hiển thị {{ startItem }} - {{ endItem }} trên tổng {{ pagination.total }} booking
+        </div>
+
+        <v-pagination
+          :model-value="page"
+          :length="pagination.totalPages"
+          :total-visible="5"
+          rounded="circle"
+          density="comfortable"
+          @update:model-value="$emit('update:page', Number($event))"
+        />
+      </div>
     </v-card-text>
   </v-card>
 </template>
 
 <script setup lang="ts">
-import type { PayoutRow } from "~/types/admin"
-import { formatAdminCurrency } from "~/mockData/admin.mock"
+import type { PaginationMeta, PayoutRow } from "~/types/admin"
 
-defineProps<{
+const props = defineProps<{
   rows: PayoutRow[]
+  keyword: string
+  page: number
+  pagination: PaginationMeta
+  isFetching?: boolean
 }>()
+
+defineEmits<{
+  (e: "update:keyword", value: string): void
+  (e: "update:page", value: number): void
+}>()
+
+const startItem = computed(() => {
+  if (!props.pagination.total) return 0
+  return (props.pagination.page - 1) * props.pagination.limit + 1
+})
+
+const endItem = computed(() => {
+  return Math.min(props.pagination.page * props.pagination.limit, props.pagination.total)
+})
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(value)
+}
 </script>
 
 <style scoped>

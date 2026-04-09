@@ -68,7 +68,7 @@
               <div class="actions">
                 <v-tooltip text="Xem chi tiết" location="top" open-delay="80">
                   <template #activator="{ props }">
-                    <v-btn v-bind="props" icon size="small" variant="text">
+                    <v-btn v-bind="props" icon size="small" variant="text" @click="emit('view', user.id)">
                       <v-icon size="18">{{ mdiEyeOutline }}</v-icon>
                     </v-btn>
                   </template>
@@ -76,7 +76,7 @@
 
                 <v-tooltip text="Chỉnh sửa người dùng" location="top" open-delay="80">
                   <template #activator="{ props }">
-                    <v-btn v-bind="props" icon size="small" variant="text">
+                    <v-btn v-bind="props" icon size="small" variant="text" @click="emit('edit', user.id)">
                       <v-icon size="18">{{ mdiAccountEditOutline }}</v-icon>
                     </v-btn>
                   </template>
@@ -94,6 +94,9 @@
                       size="small"
                       variant="text"
                       :color="user.status === 'banned' ? 'success' : 'error'"
+                      @click="
+                        emit('toggle-status-request', { userId: user.id, currentStatus: user.status, fullName: user.fullName })
+                      "
                     >
                       <v-icon size="18">
                         {{ user.status === "banned" ? mdiCheckCircleOutline : mdiBlockHelper }}
@@ -122,12 +125,18 @@ defineProps<{
   items: AdminUserListItem[]
 }>()
 
+const emit = defineEmits<{
+  (e: "view", userId: number): void
+  (e: "edit", userId: number): void
+  (e: "toggle-status-request", payload: { userId: number; currentStatus: UserStatus; fullName: string }): void
+}>()
+
 const fallbackAvatar = "https://ui-avatars.com/api/?name=User&background=E2E8F0&color=334155"
 
 const getRoleLabel = (roleId: number) => {
-  if (roleId === 1) return "Khách hàng"
+  if (roleId === 3) return "Khách hàng"
   if (roleId === 2) return "Chủ sân"
-  if (roleId === 3) return "Admin"
+  if (roleId === 1) return "Admin"
   return "Không xác định"
 }
 

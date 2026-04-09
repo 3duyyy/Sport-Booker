@@ -4,8 +4,6 @@
       <h1 class="admin-facilities-header__title">Quản lý sân bãi</h1>
       <p class="admin-facilities-header__desc">Theo dõi và quản lý cơ sở thể thao trên toàn hệ thống</p>
     </div>
-
-    <v-btn color="success" rounded="lg" class="text-none"> + Thêm mới </v-btn>
   </div>
 </template>
 

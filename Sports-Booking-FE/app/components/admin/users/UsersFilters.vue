@@ -64,9 +64,9 @@ const localModel = computed({
 
 const roleOptions: Array<{ label: string; value: AdminUserRoleFilter }> = [
   { label: "Tất cả vai trò", value: "all" },
-  { label: "Khách hàng", value: 1 },
+  { label: "Khách hàng", value: 3 },
   { label: "Chủ sân", value: 2 },
-  { label: "Admin", value: 3 },
+  { label: "Admin", value: 1 },
 ]
 
 const statusOptions: Array<{ label: string; value: AdminUserStatusFilter }> = [

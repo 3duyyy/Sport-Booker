@@ -1,4 +1,32 @@
+import type { AxiosError, AxiosRequestConfig } from "axios"
 import axios from "axios"
+import { toast } from "vue-sonner"
+
+declare module "axios" {
+  interface AxiosRequestConfig {
+    _retry?: boolean
+    _silentErrorToast?: boolean
+  }
+}
+
+type ApiErrorPayload = {
+  status?: string
+  message?: string
+  stack?: string
+}
+
+const getErrorMessage = (error: AxiosError<ApiErrorPayload>) => {
+  const data = error.response?.data
+  if (typeof data?.message === "string" && data.message.trim()) return data.message
+  if (typeof error.message === "string" && error.message.trim()) return error.message
+  return "Có lỗi xảy ra, vui lòng thử lại"
+}
+
+const showErrorToast = (message: string, config?: AxiosRequestConfig) => {
+  if (!import.meta.client) return
+  if (config?._silentErrorToast) return
+  toast.error(message)
+}
 
 export const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -24,9 +52,9 @@ axiosInstance.interceptors.request.use(
 
 axiosInstance.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const status = error.response?.status
-    const originalRequest = error.config
+  async (rawError: AxiosError<ApiErrorPayload>) => {
+    const status = rawError.response?.status
+    const originalRequest = (rawError.config || {}) as AxiosRequestConfig
 
     if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
@@ -34,21 +62,33 @@ axiosInstance.interceptors.response.use(
         const res = await axios.post(`${useRuntimeConfig().public.apiBaseUrl}/auth/refresh-token`, {}, { withCredentials: true })
 
         const newAT = res.data?.data?.accessToken
-        localStorage.setItem("access_token", newAT)
+        if (newAT) {
+          localStorage.setItem("access_token", newAT)
+          originalRequest.headers = {
+            ...(originalRequest.headers || {}),
+            Authorization: `Bearer ${newAT}`,
+          }
+          return axiosInstance(originalRequest)
+        }
 
-        originalRequest.headers.Authorization = `Bearer ${newAT}`
-
-        return axiosInstance(originalRequest)
-      } catch (error) {
+        throw new Error("Không thể làm mới phiên đăng nhập")
+      } catch (refreshErr) {
         localStorage.removeItem("access_token")
+        showErrorToast("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", originalRequest)
         await navigateTo("/auth/login")
+        return Promise.reject(refreshErr)
       }
     }
 
     if (status === 403) {
+      showErrorToast(getErrorMessage(rawError), originalRequest)
       await navigateTo("/")
+      return Promise.reject(rawError)
     }
 
-    return Promise.reject(error.response?.data?.message || error)
+    const message = getErrorMessage(rawError)
+    showErrorToast(message, originalRequest)
+
+    return Promise.reject(message)
   },
 )
