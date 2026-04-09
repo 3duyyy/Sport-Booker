@@ -7,6 +7,7 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import { env } from './config/env.config'
 import { api } from './routes'
+import { errorMiddleware } from './middlewares/error.middleware'
 
 const app = express()
 app.use(compression())
@@ -25,6 +26,8 @@ app.use(cookieParser())
 app.use(morgan('dev'))
 
 app.use('/api', api)
+
+app.use(errorMiddleware)
 
 app.listen(env.PORT, () => {
   console.log(`Server run on Port: ${env.PORT}`)

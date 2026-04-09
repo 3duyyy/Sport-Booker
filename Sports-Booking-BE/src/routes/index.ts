@@ -4,6 +4,8 @@ import { ownerRoute } from '../modules/facilities/facilities.route'
 import { publicFacilitiesRoutes } from '../modules/facilities/facilities.public.route'
 import { sportsRoutes } from '../modules/sports/sports.route'
 import { utilitiesRoutes } from '../modules/utilities/utilities.route'
+import { adminRoutes } from '../modules/admin/admin.route'
+import { usersRoute } from '../modules/users/users.route'
 
 const router = Router()
 
@@ -12,5 +14,7 @@ router.use('/owner', ownerRoute)
 router.use('/facilities', publicFacilitiesRoutes)
 router.use('/sports', sportsRoutes)
 router.use('/utilities', utilitiesRoutes)
+router.use('/admin', adminRoutes)
+router.use('/users', usersRoute)
 
 export const api = router

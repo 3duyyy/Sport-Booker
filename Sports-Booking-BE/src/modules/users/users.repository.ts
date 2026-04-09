@@ -1,4 +1,4 @@
-import { User } from '@prisma/client'
+import { User } from '../../../generated/prisma'
 import { ROLES } from '../../shared/constants/roles'
 import { prisma } from '../../shared/prisma/client'
 

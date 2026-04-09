@@ -11,7 +11,7 @@ export interface JwtPayload {
 export class JwtUtil {
   static generateAccessToken(payload: JwtPayload): string {
     return jwt.sign(payload, env.ACCESS_TOKEN_SECRET_SIGNATURE!, {
-      expiresIn: '15m',
+      expiresIn: '1d',
       algorithm: 'HS256'
     })
   }
