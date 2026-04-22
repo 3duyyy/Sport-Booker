@@ -24,7 +24,9 @@
         </div>
       </div>
 
-      <v-btn block variant="outlined" rounded="xl" class="mt-5 text-none" to="/chu-san/lich-san"> Xem lịch đầy đủ </v-btn>
+      <v-btn v-if="items.length > 5" block variant="outlined" rounded="xl" class="mt-5 text-none" @click="$emit('toggle-full')">
+        {{ isFull ? "Thu gọn lịch" : "Xem lịch đầy đủ" }}
+      </v-btn>
     </v-card-text>
   </v-card>
 </template>
@@ -34,6 +36,11 @@ import type { OwnerScheduleItem } from "~/types/owner"
 
 defineProps<{
   items: OwnerScheduleItem[]
+  isFull: boolean
+}>()
+
+defineEmits<{
+  (e: "toggle-full"): void
 }>()
 
 const getDotClass = (status: OwnerScheduleItem["status"]) => {

@@ -61,7 +61,16 @@
 
               <td class="text-center">
                 <template v-if="item.status === 'pending'">
-                  <v-btn color="error" variant="flat" rounded="lg" class="text-none" size="small">Xác nhận hoàn tiền</v-btn>
+                  <v-btn
+                    color="error"
+                    variant="flat"
+                    rounded="lg"
+                    class="text-none"
+                    size="small"
+                    :loading="loadingRefund"
+                    @click="$emit('approve', item.id)"
+                    >Xác nhận hoàn tiền</v-btn
+                  >
                 </template>
 
                 <template v-else>
@@ -108,11 +117,13 @@ const props = defineProps<{
   page: number
   pagination: PaginationMeta
   isFetching?: boolean
+  loadingRefund?: boolean
 }>()
 
 defineEmits<{
   (e: "update:keyword", value: string): void
   (e: "update:page", value: number): void
+  (e: "approve", refundId: number): void
 }>()
 
 const startItem = computed(() => {

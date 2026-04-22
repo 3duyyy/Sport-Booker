@@ -17,7 +17,7 @@
 
         <p class="facility-location">
           <v-icon :icon="mdiMapMarkerOutline" size="16" />
-          {{ fullAddress }}
+          {{ facility.address }}
         </p>
 
         <div class="facility-tags">
@@ -72,10 +72,6 @@ const displayImage = computed(() => {
 
   const thumbnail = images.find((img) => img.isThumbnail)
   return thumbnail?.imageUrl || images[0]?.imageUrl
-})
-
-const fullAddress = computed(() => {
-  return [props.facility.address, props.facility.district, props.facility.city].filter(Boolean).join(", ")
 })
 
 const formattedPrice = computed(() => {

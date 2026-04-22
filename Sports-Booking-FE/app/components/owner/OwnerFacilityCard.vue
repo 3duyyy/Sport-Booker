@@ -41,11 +41,9 @@
         </div>
 
         <div class="flex shrink-0 flex-wrap gap-2">
-          <v-btn variant="outlined" rounded="xl" class="text-none" :to="`/chu-san/co-so/${facility.id}`"> Xem chi tiết </v-btn>
-
-          <v-btn color="success" rounded="xl" class="text-none" :to="`/chu-san/co-so/${facility.id}/chinh-sua`">
-            Chỉnh sửa
-          </v-btn>
+          <v-btn variant="outlined" rounded="xl" class="text-none" @click="emit('view', facility.id)">Xem chi tiết</v-btn>
+          <v-btn color="success" rounded="xl" class="text-none" @click="emit('edit', facility.id)">Chỉnh sửa</v-btn>
+          <v-btn color="error" rounded="xl" class="text-none" @click="emit('delete', facility.id)">Xóa</v-btn>
         </div>
       </div>
 
@@ -81,6 +79,12 @@ import type { OwnerFacilityItem, OwnerFacilityStatus, OwnerFieldStatus } from "~
 
 const props = defineProps<{
   facility: OwnerFacilityItem
+}>()
+
+const emit = defineEmits<{
+  (e: "view", facilityId: number): void
+  (e: "edit", facilityId: number): void
+  (e: "delete", facilityId: number): void
 }>()
 
 const facilityStatusLabelMap: Record<OwnerFacilityStatus, string> = {

@@ -19,23 +19,37 @@
             @keydown.enter="handleSearch"
           />
 
-          <v-btn color="success" rounded="xl" class="text-none" size="large" @click="handleSearch"> Tìm kiếm </v-btn>
+          <v-btn
+            color="success"
+            rounded="xl"
+            class="text-none"
+            size="large"
+            :loading="isSearching"
+            :disabled="isSearching"
+            @click="handleSearch"
+          >
+            Tìm kiếm
+          </v-btn>
         </div>
+
+        <v-alert v-if="errorMessage" type="error" variant="tonal" rounded="lg" class="mt-4">
+          {{ errorMessage }}
+        </v-alert>
       </v-card-text>
     </v-card>
 
-    <v-card v-if="searched && foundBooking" rounded="xl" class="border border-slate-200 shadow-sm">
+    <v-card v-if="searched && activeBooking" rounded="xl" class="border border-slate-200 shadow-sm">
       <v-card-text class="pa-0">
         <div class="flex items-center justify-between gap-3 border-b border-slate-100 bg-green-50 px-5 py-4">
           <div>
-            <p class="text-base font-bold text-slate-900">#{{ foundBooking.bookingCode }}</p>
+            <p class="text-base font-bold text-slate-900">#{{ activeBooking.bookingCode }}</p>
             <p class="mt-1 text-sm text-slate-500">
-              {{ foundBooking.isCheckedIn ? "Đã xác nhận check-in" : "Đã tìm thấy thông tin đặt sân" }}
+              {{ activeBooking.isCheckedIn ? "Đã xác nhận check-in" : "Đã tìm thấy thông tin đặt sân" }}
             </p>
           </div>
 
-          <v-chip size="small" rounded="pill" variant="flat" :color="getPaymentStatusColor(foundBooking.paymentStatus)">
-            {{ getPaymentStatusLabel(foundBooking.paymentStatus) }}
+          <v-chip size="small" rounded="pill" variant="flat" :color="getPaymentStatusColor(activeBooking.paymentStatus)">
+            {{ getPaymentStatusLabel(activeBooking.paymentStatus) }}
           </v-chip>
         </div>
 
@@ -46,24 +60,24 @@
 
               <div class="mt-4 space-y-4">
                 <div>
-                  <p class="text-lg font-bold text-slate-900">{{ foundBooking.customerName }}</p>
-                  <p class="mt-1 text-sm text-slate-500">{{ foundBooking.customerPhone }}</p>
+                  <p class="text-lg font-bold text-slate-900">{{ activeBooking.customerName }}</p>
+                  <p class="mt-1 text-sm text-slate-500">{{ activeBooking.customerPhone }}</p>
                 </div>
 
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Sân</p>
-                    <p class="mt-1 text-sm font-medium text-slate-900">{{ foundBooking.fieldName }}</p>
+                    <p class="mt-1 text-sm font-medium text-slate-900">{{ activeBooking.fieldName }}</p>
                   </div>
 
                   <div>
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Ngày</p>
-                    <p class="mt-1 text-sm font-medium text-slate-900">{{ foundBooking.bookingDate }}</p>
+                    <p class="mt-1 text-sm font-medium text-slate-900">{{ activeBooking.bookingDate }}</p>
                   </div>
 
                   <div class="md:col-span-2">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Khung giờ</p>
-                    <p class="mt-1 text-sm font-medium text-slate-900">{{ foundBooking.timeLabel }}</p>
+                    <p class="mt-1 text-sm font-medium text-slate-900">{{ activeBooking.timeLabel }}</p>
                   </div>
                 </div>
               </div>
@@ -77,23 +91,23 @@
               <div class="mt-4 space-y-3">
                 <div class="flex items-center justify-between gap-4">
                   <span class="text-sm text-slate-500">Tổng tiền</span>
-                  <span class="text-sm font-semibold text-slate-900">{{ formatCurrency(foundBooking.totalAmount) }}</span>
+                  <span class="text-sm font-semibold text-slate-900">{{ formatCurrency(activeBooking.totalAmount) }}</span>
                 </div>
 
                 <div class="flex items-center justify-between gap-4">
                   <span class="text-sm text-slate-500">Đã cọc</span>
-                  <span class="text-sm font-semibold text-green-600"> -{{ formatCurrency(foundBooking.depositAmount) }} </span>
+                  <span class="text-sm font-semibold text-green-600"> -{{ formatCurrency(activeBooking.depositAmount) }} </span>
                 </div>
 
                 <div class="flex items-center justify-between gap-4 border-t border-slate-200 pt-3">
                   <span class="text-base font-bold text-slate-900">Còn lại</span>
                   <span class="text-xl font-bold text-red-500">
-                    {{ formatCurrency(foundBooking.remainingAmount) }}
+                    {{ formatCurrency(activeBooking.remainingAmount) }}
                   </span>
                 </div>
               </div>
 
-              <v-alert v-if="foundBooking.remainingAmount > 0" variant="tonal" color="error" rounded="lg" class="mt-4">
+              <v-alert v-if="activeBooking.remainingAmount > 0" variant="tonal" color="error" rounded="lg" class="mt-4">
                 Vui lòng thu phần tiền còn lại trước khi hoàn thành check-in.
               </v-alert>
 
@@ -102,11 +116,11 @@
                   v-model="isRemainingCollected"
                   density="comfortable"
                   hide-details
-                  :disabled="foundBooking.remainingAmount === 0 || foundBooking.isCheckedIn"
+                  :disabled="activeBooking.remainingAmount === 0 || activeBooking.isCheckedIn || isCompleting"
                 >
                   <template #label>
                     <span class="text-sm text-slate-600">
-                      Tôi xác nhận đã thu {{ formatCurrency(foundBooking.remainingAmount) }}
+                      Tôi xác nhận đã thu {{ formatCurrency(activeBooking.remainingAmount) }}
                     </span>
                   </template>
                 </v-checkbox>
@@ -118,13 +132,14 @@
                 rounded="xl"
                 size="large"
                 class="mt-4 text-none"
+                :loading="isCompleting"
                 :disabled="isCheckInDisabled"
                 @click="handleCompleteCheckIn"
               >
                 Hoàn thành check-in
               </v-btn>
 
-              <p v-if="foundBooking.isCheckedIn" class="mt-3 text-center text-sm font-medium text-slate-500">
+              <p v-if="activeBooking.isCheckedIn" class="mt-3 text-center text-sm font-medium text-slate-500">
                 Lượt đặt này đã được xác nhận check-in trước đó.
               </p>
             </div>
@@ -134,7 +149,7 @@
     </v-card>
 
     <v-card
-      v-else-if="searched && !foundBooking"
+      v-else-if="searched && !isSearching && !activeBooking"
       rounded="xl"
       class="border border-dashed border-slate-300 bg-white py-14 text-center shadow-none"
     >
@@ -162,6 +177,14 @@
             </thead>
 
             <tbody>
+              <tr v-if="historyLoading" class="border-t border-slate-100">
+                <td class="table-cell text-center text-slate-500" colspan="4">Đang tải lịch sử check-in...</td>
+              </tr>
+
+              <tr v-else-if="!historyItems.length" class="border-t border-slate-100">
+                <td class="table-cell text-center text-slate-500" colspan="4">Chưa có dữ liệu check-in hôm nay.</td>
+              </tr>
+
               <tr v-for="item in historyItems" :key="item.id" class="border-t border-slate-100">
                 <td class="table-cell text-slate-700">{{ item.checkedInTime }}</td>
                 <td class="table-cell text-slate-700">{{ item.customerName }}</td>
@@ -183,46 +206,57 @@ import { computed, ref, watch } from "vue"
 import type { OwnerCheckInBookingItem, OwnerCheckInHistoryItem } from "~/types/owner"
 
 const props = defineProps<{
-  bookingItems: OwnerCheckInBookingItem[]
+  bookingItem: OwnerCheckInBookingItem | null
   historyItems: OwnerCheckInHistoryItem[]
+  historyLoading?: boolean
+  isSearching?: boolean
+  isCompleting?: boolean
+  errorMessage?: string
+}>()
+
+const emit = defineEmits<{
+  (e: "search", keyword: string): void
+  (e: "complete", payload: { bookingId: number; collectedRemaining: boolean }): void
 }>()
 
 const keyword = ref("")
 const searched = ref(false)
-const foundBooking = ref<OwnerCheckInBookingItem | null>(null)
 const isRemainingCollected = ref(false)
 
-const normalizedKeyword = computed(() => keyword.value.trim().toLowerCase())
+const normalizedKeyword = computed(() => keyword.value.trim())
+const activeBooking = computed(() => props.bookingItem)
+const isSearching = computed(() => Boolean(props.isSearching))
+const isCompleting = computed(() => Boolean(props.isCompleting))
+const historyLoading = computed(() => Boolean(props.historyLoading))
+const errorMessage = computed(() => props.errorMessage ?? "")
 
 const isCheckInDisabled = computed(() => {
-  if (!foundBooking.value) return true
-  if (foundBooking.value.isCheckedIn) return true
-  if (foundBooking.value.remainingAmount === 0) return false
+  if (!activeBooking.value) return true
+  if (isCompleting.value) return true
+  if (activeBooking.value.isCheckedIn) return true
+  if (activeBooking.value.remainingAmount === 0) return false
   return !isRemainingCollected.value
 })
 
-watch(foundBooking, () => {
-  isRemainingCollected.value = false
-})
+watch(
+  () => activeBooking.value?.id,
+  () => {
+    isRemainingCollected.value = false
+  },
+)
 
 const handleSearch = () => {
   searched.value = true
-
-  if (!normalizedKeyword.value) {
-    foundBooking.value = null
-    return
-  }
-
-  foundBooking.value = props.bookingItems.find((item) => item.bookingCode.toLowerCase() === normalizedKeyword.value) || null
+  emit("search", normalizedKeyword.value)
 }
 
 const handleCompleteCheckIn = () => {
-  if (!foundBooking.value || isCheckInDisabled.value) return
+  if (!activeBooking.value || isCheckInDisabled.value) return
 
-  foundBooking.value = {
-    ...foundBooking.value,
-    isCheckedIn: true,
-  }
+  emit("complete", {
+    bookingId: activeBooking.value.id,
+    collectedRemaining: isRemainingCollected.value,
+  })
 }
 
 const getPaymentStatusLabel = (status: OwnerCheckInBookingItem["paymentStatus"]) => {
@@ -255,12 +289,12 @@ const getPaymentStatusColor = (status: OwnerCheckInBookingItem["paymentStatus"])
   }
 }
 
-const formatCurrency = (value: number) => {
+const formatCurrency = (value: number | null | undefined) => {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
     maximumFractionDigits: 0,
-  }).format(value)
+  }).format(Number(value ?? 0))
 }
 </script>
 

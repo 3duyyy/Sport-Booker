@@ -8,6 +8,7 @@
               <th>Mã booking</th>
               <th>Khách hàng</th>
               <th>Sân và khu vực</th>
+              <th>Trạng thái đặt sân</th>
               <th>Loại thanh toán</th>
               <th class="text-right">Số tiền</th>
               <th class="text-center">Trạng thái</th>
@@ -41,6 +42,18 @@
                   <div class="font-weight-medium text-slate-900">{{ item.facilityName }}</div>
                   <div class="text-caption text-slate-500">{{ item.fieldName }}</div>
                 </div>
+              </td>
+
+              <td>
+                <v-chip
+                  :color="getBookingStatusMeta(item.bookingStatus).color"
+                  variant="tonal"
+                  rounded="lg"
+                  size="small"
+                  class="font-weight-medium"
+                >
+                  {{ getBookingStatusMeta(item.bookingStatus).label }}
+                </v-chip>
               </td>
 
               <td>
@@ -109,7 +122,7 @@
             </tr>
 
             <tr v-if="!rows.length">
-              <td colspan="8" class="text-center py-6 text-slate-500">Chưa có dữ liệu xác minh thanh toán</td>
+              <td colspan="9" class="text-center py-6 text-slate-500">Chưa có dữ liệu xác minh thanh toán</td>
             </tr>
           </tbody>
         </v-table>
@@ -171,6 +184,21 @@ const getStatusMeta = (status: PaymentVerificationRow["status"]) => {
       return { label: "Chờ xác minh", color: "warning" }
   }
 }
+
+const getBookingStatusMeta = (status: string) => {
+  switch (status) {
+    case "confirmed":
+      return { label: "Đã xác nhận", color: "success" }
+    case "completed":
+      return { label: "Hoàn thành", color: "info" }
+    case "cancelled":
+      return { label: "Đã hủy", color: "error" }
+    case "rejected":
+      return { label: "Bị từ chối", color: "grey" }
+    default:
+      return { label: "Chờ xác nhận", color: "warning" }
+  }
+}
 </script>
 
 <style scoped>
@@ -179,7 +207,7 @@ const getStatusMeta = (status: PaymentVerificationRow["status"]) => {
 }
 
 .financial-table {
-  min-width: 1180px;
+  min-width: 1320px;
 }
 
 .financial-table :deep(th) {

@@ -29,6 +29,10 @@ const breadcrumbItems = computed(() => [
 </script>
 
 <style scoped>
+.search-page-header {
+  margin-bottom: 22px;
+}
+
 .search-page-header__title {
   margin: 0;
   color: #0f172a;

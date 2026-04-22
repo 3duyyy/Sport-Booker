@@ -45,6 +45,16 @@
 
         <div class="mt-5 flex flex-wrap gap-2">
           <v-chip
+            rounded="pill"
+            :variant="selectedFacilityId === null ? 'flat' : 'outlined'"
+            :color="selectedFacilityId === null ? 'success' : undefined"
+            class="cursor-pointer"
+            @click="selectedFacilityId = null"
+          >
+            Tất cả
+          </v-chip>
+
+          <v-chip
             v-for="facility in facilityItems"
             :key="facility.id"
             rounded="pill"
@@ -99,13 +109,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref } from "vue"
+import { computed, h, ref, watch } from "vue"
 import FullCalendar from "@fullcalendar/vue3"
 import dayGridPlugin from "@fullcalendar/daygrid"
 import timeGridPlugin from "@fullcalendar/timegrid"
 import interactionPlugin from "@fullcalendar/interaction"
 import viLocale from "@fullcalendar/core/locales/vi"
-import type { CalendarOptions, EventContentArg } from "@fullcalendar/core"
+import type { CalendarOptions, DatesSetArg, EventContentArg } from "@fullcalendar/core"
 import type { OwnerCalendarEventItem, OwnerCalendarFacilityFilterItem } from "~/types/owner"
 
 const props = defineProps<{
@@ -113,16 +123,38 @@ const props = defineProps<{
   eventItems: OwnerCalendarEventItem[]
 }>()
 
+const emit = defineEmits<{
+  (e: "range-change", payload: { from: string; to: string }): void
+}>()
+
 const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null)
 const currentView = ref<"timeGridDay" | "timeGridWeek" | "dayGridMonth">("timeGridWeek")
-const selectedFacilityId = ref<number | null>(props.facilityItems[0]?.id ?? null)
+const selectedFacilityId = ref<number | null>(null)
+
+watch(
+  () => props.facilityItems,
+  (items) => {
+    if (!items.length) {
+      selectedFacilityId.value = null
+      return
+    }
+
+    if (selectedFacilityId.value !== null && !items.some((item) => Number(item.id) === Number(selectedFacilityId.value))) {
+      selectedFacilityId.value = null
+    }
+  },
+  { immediate: true },
+)
 
 const filteredEvents = computed(() => {
-  if (!selectedFacilityId.value) return []
+  const selectedId = selectedFacilityId.value
 
-  return props.eventItems
-    .filter((item) => item.facilityId === selectedFacilityId.value)
-    .map((item) => ({
+  const source =
+    selectedId === null ? props.eventItems : props.eventItems.filter((item) => Number(item.facilityId) === Number(selectedId))
+
+  return source.map((item) => {
+    const color = getEventColor(item.status)
+    return {
       id: item.id,
       title: item.title,
       start: item.start,
@@ -133,15 +165,23 @@ const filteredEvents = computed(() => {
         status: item.status,
         customerName: item.customerName,
       },
-      backgroundColor: getEventColor(item.status),
-      borderColor: getEventColor(item.status),
+      backgroundColor: color,
+      borderColor: color,
       textColor: "#ffffff",
-    }))
+    }
+  })
 })
 
 const changeView = (view: "timeGridDay" | "timeGridWeek" | "dayGridMonth") => {
   currentView.value = view
   calendarRef.value?.getApi().changeView(view)
+}
+
+const handleDatesSet = (arg: DatesSetArg) => {
+  emit("range-change", {
+    from: arg.start.toISOString(),
+    to: arg.end.toISOString(),
+  })
 }
 
 const getEventColor = (status: OwnerCalendarEventItem["status"]) => {
@@ -204,9 +244,10 @@ const calendarOptions = computed<CalendarOptions>(() => ({
     today: "Hôm nay",
   },
   events: filteredEvents.value,
+  datesSet: handleDatesSet,
   allDaySlot: false,
-  slotMinTime: "06:00:00",
-  slotMaxTime: "22:00:00",
+  slotMinTime: "00:00:00",
+  slotMaxTime: "24:00:00",
   slotDuration: "00:30:00",
   nowIndicator: true,
   editable: false,
@@ -219,6 +260,13 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   stickyHeaderDates: true,
   eventContent: renderEventContent,
 }))
+
+watchEffect(() => {
+  console.log("facilityItems", props.facilityItems)
+  console.log("eventItems", props.eventItems)
+  console.log("selectedFacilityId", selectedFacilityId.value)
+  console.log("filteredEvents", filteredEvents.value)
+})
 </script>
 
 <style scoped>
@@ -262,6 +310,10 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   font-weight: 600;
 }
 
+:deep(.fc-icon) {
+  margin-bottom: 3px;
+}
+
 :deep(.fc-col-header-cell) {
   background: rgb(248 250 252);
 }
@@ -294,7 +346,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
 :deep(.fc-event) {
   border: none;
   border-radius: 14px;
-  padding: 0;
+  padding: 5px;
   overflow: hidden;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
 }
@@ -304,13 +356,13 @@ const calendarOptions = computed<CalendarOptions>(() => ({
 }
 
 :deep(.fc-event-main) {
-  padding: 0;
+  padding: 10px;
   height: 100%;
 }
 
 .owner-calendar-event {
   height: 100% !important;
-  padding: 10px 12px;
+  padding: 12px 14px;
 
   display: flex;
   flex-direction: column;
@@ -324,12 +376,14 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
+  padding-inline-start: 2px;
 }
 
 .owner-calendar-event__title {
   font-size: 13px;
   font-weight: 700;
   line-height: 1.3;
+  padding-inline-start: 2px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -341,6 +395,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   font-size: 11px;
   line-height: 1.2;
   opacity: 0.95;
+  padding-inline-start: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -31,7 +31,7 @@ const sortOptions = [
   { title: "Đề xuất", value: "recommended" },
   { title: "Giá thấp đến cao", value: "price-asc" },
   { title: "Giá cao đến thấp", value: "price-desc" },
-  { title: "Đánh giá cao nhất", value: "rating-desc" },
+  { title: "Đánh giá từ thấp đến cao", value: "rating-desc" },
 ]
 </script>
 
@@ -42,7 +42,6 @@ const sortOptions = [
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 22px;
-  margin-top: 22px;
 }
 
 .results-toolbar__label {

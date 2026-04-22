@@ -14,7 +14,11 @@
       />
 
       <template v-else>
-        <FacilitiesTable :items="facilities" @toggle-status-request="openToggleStatusConfirm" />
+        <FacilitiesTable
+          :items="facilities"
+          @toggle-status-request="openToggleStatusConfirm"
+          @approve-request="openApproveConfirm"
+        />
 
         <AppLoading
           v-if="isFetching"
@@ -64,6 +68,7 @@ import FacilitiesFilters from "~/components/admin/facilities/FacilitiesFilters.v
 import FacilitiesHeader from "~/components/admin/facilities/FacilitiesHeader.vue"
 import FacilitiesTable from "~/components/admin/facilities/FacilitiesTable.vue"
 import {
+  useAdminApproveFacilityMutation,
   useAdminFacilitiesQuery,
   useAdminUpdateFacilityStatusMutation,
 } from "~/composables/queries/admin/useAdminFacilitiesQueries"
@@ -160,8 +165,10 @@ const errorMessage = computed(() => {
 
 // Handle toggle facility status
 const { mutateAsync: updateFacilityStatus, isPending: isUpdatingStatus } = useAdminUpdateFacilityStatusMutation()
+const { mutateAsync: approveFacility, isPending: isApprovingFacility } = useAdminApproveFacilityMutation()
 
 const pendingStatusAction = ref<null | { facilityId: number; nextStatus: "active" | "inactive" }>(null)
+const pendingApproveFacilityId = ref<number | null>(null)
 
 const confirmDialog = ref({
   open: false,
@@ -195,19 +202,44 @@ const openToggleStatusConfirm = (payload: { facilityId: number; currentStatus: F
   }
 }
 
+const openApproveConfirm = (payload: { facilityId: number; facilityName: string }) => {
+  pendingStatusAction.value = null
+  pendingApproveFacilityId.value = payload.facilityId
+
+  confirmDialog.value = {
+    open: true,
+    title: "Xác nhận phê duyệt cơ sở",
+    message: "Bạn có chắc muốn phê duyệt cơ sở " + payload.facilityName + "?",
+    confirmText: "Phê duyệt",
+    confirmColor: "success",
+    cancelColor: "error",
+  }
+}
+
 const resetConfirmDialog = () => {
   confirmDialog.value.open = false
   pendingStatusAction.value = null
+  pendingApproveFacilityId.value = null
 }
 
 const confirmToggleStatus = async () => {
-  if (!pendingStatusAction.value) return
-
   try {
+    if (pendingApproveFacilityId.value) {
+      await approveFacility(pendingApproveFacilityId.value)
+      toast.success("Phê duyệt cơ sở thành công")
+      return
+    }
+
+    if (!pendingStatusAction.value) return
+
     await updateFacilityStatus({
       facilityId: pendingStatusAction.value.facilityId,
       data: { status: pendingStatusAction.value.nextStatus },
     })
+
+    toast.success(
+      pendingStatusAction.value.nextStatus === "inactive" ? "Tạm ngưng cơ sở thành công" : "Kích hoạt lại cơ sở thành công",
+    )
   } catch (err) {
     console.error(err)
   } finally {

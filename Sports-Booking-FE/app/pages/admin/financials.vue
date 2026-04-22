@@ -24,6 +24,8 @@
         :is-fetching="isPayoutsFetching"
         @update:keyword="onPayoutKeywordChange"
         @update:page="onPayoutPageChange"
+        :loading-settle-id="isSettling"
+        @settle="handleSettlePayout"
       />
 
       <RefundsTable
@@ -34,6 +36,8 @@
         :is-fetching="isRefundsFetching"
         @update:keyword="onRefundKeywordChange"
         @update:page="onRefundPageChange"
+        :loading-refund="isApprovingRefund"
+        @approve="handleApproveRefund"
       />
     </div>
 
@@ -41,17 +45,47 @@
       {{ listErrorMessage }}
     </v-alert>
   </div>
+
+  <ConfirmDialog
+    v-model="showDialog"
+    title="Xác nhận thanh toán"
+    message="Bạn có chắc chắn đã chuyển khoản cho Chủ sân này chưa? Hệ thống sẽ gạch nợ hàng loạt các booking của chủ sân này."
+    confirm-text="Xác nhận"
+    confirm-color="success"
+    cancel-color="error"
+    cancel-text="Hủy"
+    :is-loading="isSettling"
+    @confirm="executeSettlePayout"
+    @cancel="resetConfirmDialog"
+  />
+
+  <ConfirmDialog
+    v-model="showRefundDialog"
+    title="Xác nhận hoàn tiền"
+    message="Bạn đã chuyển tiền hoàn cho khách hàng qua tài khoản ngân hàng của họ chưa? Hành động này không thể hoàn tác."
+    confirm-text="Xác nhận"
+    confirm-color="error"
+    cancel-color="primary"
+    cancel-text="Hủy"
+    :is-loading="isApprovingRefund"
+    @confirm="executeApproveRefund"
+    @cancel="resetRefundDialog"
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
+import { toast } from "vue-sonner"
 import FinancialSummaryCard from "~/components/admin/financials/FinancialSummaryCard.vue"
 import PayoutsTable from "~/components/admin/financials/PayoutsTable.vue"
 import RefundsTable from "~/components/admin/financials/RefundsTable.vue"
+import ConfirmDialog from "~/components/common/ConfirmDialog.vue"
 import {
   useAdminFinancialsSummaryQuery,
   useAdminPayoutsQuery,
   useAdminRefundsQuery,
+  useApproveRefundMutation,
+  useSettlePayoutMutation,
 } from "~/composables/queries/admin/useAdminFinancialsQueries"
 import type { PayoutRow, RefundRow, PaginationMeta } from "~/types/admin"
 
@@ -96,7 +130,6 @@ const refundParams = computed(() => ({
 
 const { data: summaryData, error: summaryErr } = useAdminFinancialsSummaryQuery()
 const { data: payoutsData, isFetching: isPayoutsFetching, error: payoutsErr } = useAdminPayoutsQuery(payoutParams)
-
 const { data: refundsData, isFetching: isRefundsFetching, error: refundsErr } = useAdminRefundsQuery(refundParams)
 
 const payoutRows = computed<PayoutRow[]>(() => payoutsData.value?.data ?? [])
@@ -191,6 +224,57 @@ const onPayoutPageChange = (value: number) => {
 
 const onRefundPageChange = (value: number) => {
   refundPage.value = value
+}
+
+const { mutateAsync: settlePayout, isPending: isSettling } = useSettlePayoutMutation()
+const pendingSettleOwnerId = ref<number | null>(null)
+const showDialog = ref<boolean>(false)
+
+const handleSettlePayout = (ownerId: number) => {
+  pendingSettleOwnerId.value = ownerId
+  showDialog.value = true
+}
+
+const resetConfirmDialog = () => {
+  showDialog.value = false
+  pendingSettleOwnerId.value = null
+}
+
+const executeSettlePayout = async () => {
+  if (!pendingSettleOwnerId.value) return
+  try {
+    await settlePayout(pendingSettleOwnerId.value)
+    toast.success("Gạch nợ chi trả thành công!")
+    resetConfirmDialog()
+  } catch (error: any) {
+    toast.error(error.response?.data?.message || "Có lỗi xảy ra khi chi trả")
+  }
+}
+
+const { mutateAsync: approveRefund, isPending: isApprovingRefund } = useApproveRefundMutation()
+const pendingRefundId = ref<number | null>(null)
+const showRefundDialog = ref<boolean>(false)
+
+const handleApproveRefund = (refundId: number) => {
+  pendingRefundId.value = refundId
+  showRefundDialog.value = true
+}
+
+const resetRefundDialog = () => {
+  showRefundDialog.value = false
+  pendingRefundId.value = null
+}
+
+const executeApproveRefund = async () => {
+  if (!pendingRefundId.value) return
+
+  try {
+    await approveRefund(pendingRefundId.value)
+    toast.success("Xác nhận hoàn tiền thành công!")
+    resetRefundDialog()
+  } catch (error: any) {
+    toast.error(error.response?.data?.message || "Có lỗi xảy ra khi hoàn tiền")
+  }
 }
 
 watch(

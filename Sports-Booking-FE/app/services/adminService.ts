@@ -100,4 +100,16 @@ export const adminService = {
   updateFacilityStatus(facilityId: number, payload: AdminUpdateFacilityStatusPayload) {
     return axiosInstance.patch<AdminFacilityStatusUpdateApiResponse>("/admin/facilities/" + facilityId + "/status", payload)
   },
+
+  approveFacility(facilityId: number) {
+    return axiosInstance.patch<AdminFacilityStatusUpdateApiResponse>("/admin/facilities/" + facilityId + "/approve")
+  },
+
+  settlePayout(ownerId: number) {
+    return axiosInstance.patch(`/admin/financials/payouts/${ownerId}/settle`)
+  },
+
+  approveRefund(refundId: number) {
+    return axiosInstance.patch(`/admin/financials/refunds/${refundId}/approve`)
+  },
 }

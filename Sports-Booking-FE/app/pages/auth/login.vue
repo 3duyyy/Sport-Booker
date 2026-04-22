@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="flex flex-col items-center justify-center mb-8">
-      <h2 class="text-3xl font-bold text-gray-900 m-0 p-0">Chào mừng trở lại!</h2>
-      <p class="text-gray-500">Vui lòng đăng nhập để tiếp tục đặt sân.</p>
+      <h2 class="text-3xl font-bold text-slate-900 m-0 p-0">Chào mừng trở lại!</h2>
+      <p class="text-slate-500">Vui lòng đăng nhập để tiếp tục đặt sân.</p>
     </div>
 
     <v-form @submit.prevent="onSubmit">
@@ -13,7 +13,7 @@
         placeholder="ví dụ: abc@gmail.com"
         variant="outlined"
         density="comfortable"
-        color="primary"
+        color="success"
         :prepend-inner-icon="mdiEmailOutline"
         class="mb-3"
       />
@@ -24,7 +24,7 @@
         :type="showPassword ? 'text' : 'password'"
         variant="outlined"
         density="comfortable"
-        color="primary"
+        color="success"
         :prepend-inner-icon="mdiLockOutline"
         :append-inner-icon="showPassword ? mdiEyeOff : mdiEye"
         @click:append-inner="showPassword = !showPassword"
@@ -32,19 +32,19 @@
       />
 
       <div class="flex justify-end mb-6">
-        <NuxtLink to="/forgot-password" class="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors">
+        <NuxtLink to="/forgot-password" class="text-sm font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
           Quên mật khẩu?
         </NuxtLink>
       </div>
 
-      <v-btn type="submit" color="primary" size="x-large" block elevation="2" class="font-bold mb-6" :loading="isSubmitting">
+      <v-btn type="submit" color="success" size="x-large" block elevation="2" class="font-bold mb-6" :loading="isSubmitting">
         Đăng nhập
       </v-btn>
     </v-form>
 
     <p class="text-center text-gray-600">
       Chưa có tài khoản ?
-      <NuxtLink to="/auth/register" class="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
+      <NuxtLink to="/auth/register" class="font-semibold text-emerald-600 hover:text-emerald-500 transition-colors"
         >Đăng ký ngay</NuxtLink
       >
     </p>

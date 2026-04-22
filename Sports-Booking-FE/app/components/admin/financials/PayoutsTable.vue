@@ -25,10 +25,10 @@
         <v-table class="financial-table">
           <thead>
             <tr>
-              <th>Chủ sân / Cơ sở</th>
-              <th>Mã booking</th>
+              <th>Chủ sân</th>
+              <th class="text-center">Số booking chưa chi trả</th>
               <th>Thông tin ngân hàng</th>
-              <th class="text-right">Số tiền chi trả</th>
+              <th class="text-right">Tổng tiền chi trả</th>
               <th class="text-center">Hành động</th>
             </tr>
           </thead>
@@ -37,24 +37,29 @@
             <tr v-for="item in rows" :key="item.id">
               <td>
                 <div class="font-weight-bold text-slate-900">{{ item.ownerName }}</div>
-                <div class="text-body-2 text-slate-500 mt-1">{{ item.facilityName }}</div>
               </td>
-
-              <td class="font-weight-medium text-slate-700">
-                {{ item.bookingCode }}
+              <td class="text-center font-weight-medium text-slate-700">
+                {{ item.bookingCount }}
               </td>
-
               <td>
                 <div class="text-slate-800">{{ item.bankName }}</div>
                 <div class="text-body-2 text-slate-500 mt-1">{{ item.bankAccount }} - {{ item.accountHolder }}</div>
               </td>
-
               <td class="text-right font-weight-bold text-slate-900">
                 {{ formatCurrency(item.payoutAmount) }}
               </td>
-
               <td class="text-center">
-                <v-btn color="error" variant="flat" rounded="lg" class="text-none" size="small">Xác nhận chi trả</v-btn>
+                <v-btn
+                  color="success"
+                  variant="flat"
+                  rounded="lg"
+                  class="text-none"
+                  size="small"
+                  :loading="loadingSettleId"
+                  @click="$emit('settle', item.ownerId)"
+                >
+                  Xác nhận đã chuyển
+                </v-btn>
               </td>
             </tr>
 
@@ -94,11 +99,13 @@ const props = defineProps<{
   page: number
   pagination: PaginationMeta
   isFetching?: boolean
+  loadingSettleId?: boolean
 }>()
 
 defineEmits<{
   (e: "update:keyword", value: string): void
   (e: "update:page", value: number): void
+  (e: "settle", ownerId: number): void
 }>()
 
 const startItem = computed(() => {

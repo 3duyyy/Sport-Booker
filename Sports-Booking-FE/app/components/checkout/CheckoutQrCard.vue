@@ -30,6 +30,7 @@
         rounded="xl"
         class="text-none font-weight-bold pa-6"
         :prepend-icon="mdiCheckCircleOutline"
+        :loading="loading"
         @click="$emit('confirm-paid')"
       >
         Tôi đã chuyển khoản
@@ -58,6 +59,7 @@ import { mdiCheckCircleOutline, mdiCloseCircleOutline } from "@mdi/js"
 defineProps<{
   amount: number
   transferContent: string
+  loading?: boolean
 }>()
 
 defineEmits<{

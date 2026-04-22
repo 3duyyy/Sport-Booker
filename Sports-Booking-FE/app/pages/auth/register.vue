@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="flex flex-col items-center justify-center mb-8">
-      <h2 class="text-3xl font-bold text-gray-900 m-0 p-0">Tạo tài khoản mới</h2>
-      <p class="text-gray-500">Đăng ký để bắt đầu đặt sân và quản lý lịch chơi.</p>
+      <h2 class="text-3xl font-bold text-slate-900 m-0 p-0">Tạo tài khoản mới</h2>
+      <p class="text-slate-500">Đăng ký để bắt đầu đặt sân và quản lý lịch chơi.</p>
     </div>
 
     <v-form @submit.prevent="onSubmit">
@@ -13,7 +13,7 @@
         placeholder="ví dụ: Nguyễn Văn A"
         variant="outlined"
         density="comfortable"
-        color="primary"
+        color="success"
         :prepend-inner-icon="mdiAccountOutline"
         class="mb-3"
       />
@@ -26,7 +26,7 @@
           placeholder="ví dụ: abc@gmail.com"
           variant="outlined"
           density="comfortable"
-          color="primary"
+          color="success"
           :prepend-inner-icon="mdiEmailOutline"
           class="mb-3"
         />
@@ -38,7 +38,7 @@
           placeholder="ví dụ: 0901234567"
           variant="outlined"
           density="comfortable"
-          color="primary"
+          color="success"
           :prepend-inner-icon="mdiPhoneOutline"
           class="mb-3"
         />
@@ -51,7 +51,7 @@
         :type="showPassword ? 'text' : 'password'"
         variant="outlined"
         density="comfortable"
-        color="primary"
+        color="success"
         :prepend-inner-icon="mdiLockOutline"
         :append-inner-icon="showPassword ? mdiEyeOff : mdiEye"
         @click:append-inner="showPassword = !showPassword"
@@ -65,21 +65,23 @@
         :type="showConfirmPassword ? 'text' : 'password'"
         variant="outlined"
         density="comfortable"
-        color="primary"
+        color="success"
         :prepend-inner-icon="mdiShieldLockOutline"
         :append-inner-icon="showConfirmPassword ? mdiEyeOff : mdiEye"
         @click:append-inner="showConfirmPassword = !showConfirmPassword"
         class="mb-6"
       />
 
-      <v-btn type="submit" color="primary" size="x-large" block elevation="2" class="font-bold mb-6" :loading="isSubmitting">
+      <v-btn type="submit" color="success" size="x-large" block elevation="2" class="font-bold mb-6" :loading="isSubmitting">
         Đăng ký
       </v-btn>
     </v-form>
 
     <p class="text-center text-gray-600">
       Đã có tài khoản ?
-      <NuxtLink to="/login" class="font-semibold text-blue-600 hover:text-blue-500 transition-colors">Đăng nhập ngay</NuxtLink>
+      <NuxtLink to="/auth/login" class="font-semibold text-emerald-600 hover:text-emerald-500 transition-colors"
+        >Đăng nhập ngay</NuxtLink
+      >
     </p>
   </div>
 </template>

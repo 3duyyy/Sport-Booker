@@ -56,16 +56,57 @@
           </tbody>
         </table>
       </div>
+
+      <div class="px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
+        <p class="text-sm text-slate-500">Hiển thị {{ startItem }} - {{ endItem }} trên tổng {{ pagination.total }} lượt đặt</p>
+
+        <v-pagination
+          v-model="internalPage"
+          :length="pagination.totalPages"
+          :total-visible="5"
+          rounded="circle"
+          density="comfortable"
+        />
+      </div>
     </v-card-text>
   </v-card>
 </template>
 
 <script setup lang="ts">
-import type { OwnerBookingStatus, OwnerRecentBookingItem } from "~/types/owner"
+import type { OwnerBookingStatus, OwnerPaginationMeta, OwnerRecentBookingItem } from "~/types/owner"
 
-defineProps<{
+const props = defineProps<{
   items: OwnerRecentBookingItem[]
+  pagination: OwnerPaginationMeta
 }>()
+
+const emit = defineEmits<{
+  (e: "update:page", page: number): void
+}>()
+
+const internalPage = ref(props.pagination.page)
+
+watch(
+  () => props.pagination.page,
+  (nextPage) => {
+    internalPage.value = nextPage
+  },
+)
+
+watch(internalPage, (nextPage) => {
+  if (nextPage !== props.pagination.page) {
+    emit("update:page", nextPage)
+  }
+})
+
+const startItem = computed(() => {
+  if (!props.pagination.total) return 0
+  return (props.pagination.page - 1) * props.pagination.limit + 1
+})
+
+const endItem = computed(() => {
+  return Math.min(props.pagination.page * props.pagination.limit, props.pagination.total)
+})
 
 const getStatusColor = (status: OwnerBookingStatus) => {
   switch (status) {

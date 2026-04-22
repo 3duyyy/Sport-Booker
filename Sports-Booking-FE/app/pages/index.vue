@@ -12,10 +12,12 @@ const keyword = ref("")
 const bookingDate = ref("")
 
 const handleSearch = () => {
-  toast.success("Đã nhận thông tin tìm kiếm")
-  console.log({
-    keyword: keyword.value,
-    bookingDate: bookingDate.value,
+  router.push({
+    path: "/search-facilities",
+    query: {
+      keyword: keyword.value || undefined,
+      date: bookingDate.value || undefined,
+    },
   })
 }
 

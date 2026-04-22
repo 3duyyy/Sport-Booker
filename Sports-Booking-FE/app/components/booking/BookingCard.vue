@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import {
-  mdiCalendarMonthOutline,
-  mdiClockOutline,
-  mdiMapMarkerOutline,
-  mdiFileDocumentOutline,
-  mdiCloseCircleOutline,
-} from "@mdi/js"
+import dayjs from "dayjs"
+import { mdiCalendarMonthOutline, mdiClockOutline, mdiMapMarkerOutline, mdiCloseCircleOutline } from "@mdi/js"
 import type { CustomerBookingItem } from "~/types/booking"
 
 const props = defineProps<{
   booking: CustomerBookingItem
+}>()
+
+const emit = defineEmits<{
+  (e: "cancel-request", payload: { bookingId: number; bookingCode: string }): void
 }>()
 
 const formatPrice = (value: number) => {
@@ -55,6 +54,40 @@ const paymentConfig = computed(() => {
       }
   }
 })
+
+const showCancelButton = computed(() => {
+  return props.booking.tab === "pending_confirmation" || props.booking.tab === "upcoming"
+})
+
+const isWithinTwoHours = computed(() => {
+  const startAt = dayjs(`${props.booking.bookingDate} ${props.booking.startTime}`, "DD/MM/YYYY HH:mm", true)
+  if (!startAt.isValid()) return false
+
+  const diffMs = startAt.diff(dayjs())
+  return diffMs <= 2 * 60 * 60 * 1000
+})
+
+const isCancelDisabled = computed(() => {
+  if (!showCancelButton.value) return false
+  if (props.booking.canCancel === false) return true
+  return isWithinTwoHours.value
+})
+
+const cancelTooltip = computed(() => {
+  if (!isCancelDisabled.value) return ""
+  if (props.booking.cancelBlockedReason) return props.booking.cancelBlockedReason
+  if (isWithinTwoHours.value) return "Không thể hủy lịch trong vòng 2 tiếng trước giờ bắt đầu"
+  return "Lịch đặt này hiện không thể hủy"
+})
+
+const handleCancelRequest = () => {
+  if (isCancelDisabled.value) return
+
+  emit("cancel-request", {
+    bookingId: props.booking.id,
+    bookingCode: props.booking.bookingCode,
+  })
+}
 </script>
 
 <template>
@@ -158,23 +191,36 @@ const paymentConfig = computed(() => {
           </v-alert>
 
           <div class="d-flex flex-wrap justify-end ga-3 mt-4">
-            <v-btn v-if="booking.canViewDetail" variant="outlined" rounded="lg" class="text-none">
+            <!-- <v-btn v-if="booking.canViewDetail" variant="outlined" rounded="lg" class="text-none">
               <template #prepend>
                 <v-icon :icon="mdiFileDocumentOutline" size="18" />
               </template>
               Xem chi tiết
-            </v-btn>
+            </v-btn> -->
 
             <v-btn v-if="booking.canViewReceipt" color="success" variant="outlined" rounded="lg" class="text-none">
               Xem hóa đơn
             </v-btn>
 
-            <v-btn v-if="booking.canCancel" color="error" variant="flat" rounded="lg" class="text-none">
-              <template #prepend>
-                <v-icon :icon="mdiCloseCircleOutline" size="18" />
+            <v-tooltip v-if="showCancelButton" :disabled="!isCancelDisabled" :text="cancelTooltip" location="top">
+              <template #activator="{ props: tooltipProps }">
+                <span v-bind="tooltipProps" class="d-inline-block">
+                  <v-btn
+                    color="error"
+                    variant="flat"
+                    rounded="lg"
+                    class="text-none"
+                    :disabled="isCancelDisabled"
+                    @click="handleCancelRequest"
+                  >
+                    <template #prepend>
+                      <v-icon :icon="mdiCloseCircleOutline" size="18" />
+                    </template>
+                    Hủy lịch đặt
+                  </v-btn>
+                </span>
               </template>
-              Hủy lịch đặt
-            </v-btn>
+            </v-tooltip>
           </div>
         </div>
       </v-col>

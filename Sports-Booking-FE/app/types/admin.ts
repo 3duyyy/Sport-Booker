@@ -303,13 +303,12 @@ export interface FinancialStats {
 
 export interface PayoutRow {
   id: number
-  bookingId: number
-  bookingCode: string
+  ownerId: number
   ownerName: string
-  facilityName: string
   bankName: string
   bankAccount: string
   accountHolder: string
+  bookingCount: number
   payoutAmount: number
 }
 
@@ -368,6 +367,7 @@ export type PaymentVerificationKind = "full_payment" | "deposit"
 export interface PaymentVerificationRow {
   id: number
   bookingId: number
+  bookingStatus: string
   transactionId: number
   customerName: string
   customerAvatarUrl?: string | null

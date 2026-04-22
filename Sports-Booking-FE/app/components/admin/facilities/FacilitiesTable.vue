@@ -84,45 +84,52 @@
 
             <td>
               <div class="actions">
-                <!-- <v-tooltip text="Xem chi tiết" location="top" open-delay="80">
-                  <template #activator="{ props }">
-                    <v-btn v-bind="props" icon size="small" variant="text">
-                      <v-icon size="18">{{ mdiEyeOutline }}</v-icon>
-                    </v-btn>
-                  </template>
-                </v-tooltip>
+                <template v-if="facility.status === 'pending_approve'">
+                  <v-tooltip text="Phê duyệt cơ sở" location="top" open-delay="80">
+                    <template #activator="{ props }">
+                      <v-btn
+                        v-bind="props"
+                        icon
+                        size="small"
+                        variant="text"
+                        color="success"
+                        @click="
+                          emit('approve-request', {
+                            facilityId: facility.id,
+                            facilityName: facility.name,
+                          })
+                        "
+                      >
+                        <v-icon size="18">{{ mdiShieldCheckOutline }}</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+                </template>
 
-                <v-tooltip text="Quản lý cơ sở" location="top" open-delay="80">
-                  <template #activator="{ props }">
-                    <v-btn v-bind="props" icon size="small" variant="text">
-                      <v-icon size="18">{{ mdiPencilOutline }}</v-icon>
-                    </v-btn>
-                  </template>
-                </v-tooltip> -->
-
-                <v-tooltip :text="getToggleTooltip(facility.status)" location="top" open-delay="80">
-                  <template #activator="{ props }">
-                    <v-btn
-                      v-bind="props"
-                      icon
-                      size="small"
-                      variant="text"
-                      :disabled="!canToggleStatus(facility.status)"
-                      :color="facility.status === 'inactive' ? 'success' : 'error'"
-                      @click="
-                        emit('toggle-status-request', {
-                          facilityId: facility.id,
-                          currentStatus: facility.status,
-                          facilityName: facility.name,
-                        })
-                      "
-                    >
-                      <v-icon size="18">
-                        {{ facility.status === "inactive" ? mdiCheckCircleOutline : mdiPower }}
-                      </v-icon>
-                    </v-btn>
-                  </template>
-                </v-tooltip>
+                <template v-else>
+                  <v-tooltip :text="getToggleTooltip(facility.status)" location="top" open-delay="80">
+                    <template #activator="{ props }">
+                      <v-btn
+                        v-bind="props"
+                        icon
+                        size="small"
+                        variant="text"
+                        :color="facility.status === 'inactive' ? 'success' : 'error'"
+                        @click="
+                          emit('toggle-status-request', {
+                            facilityId: facility.id,
+                            currentStatus: facility.status,
+                            facilityName: facility.name,
+                          })
+                        "
+                      >
+                        <v-icon size="18">
+                          {{ facility.status === "inactive" ? mdiCheckCircleOutline : mdiPower }}
+                        </v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+                </template>
               </div>
             </td>
           </tr>
@@ -137,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { mdiCheckCircleOutline, mdiPower } from "@mdi/js"
+import { mdiCheckCircleOutline, mdiPower, mdiShieldCheckOutline } from "@mdi/js"
 import type { AdminFacilityListItem, AdminFacilityPerformance, FacilityStatus } from "~/types/admin"
 
 defineProps<{
@@ -146,6 +153,7 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: "toggle-status-request", payload: { facilityId: number; currentStatus: FacilityStatus; facilityName: string }): void
+  (e: "approve-request", payload: { facilityId: number; facilityName: string }): void
 }>()
 
 const fallbackThumbnail = "https://ui-avatars.com/api/?name=Facility&background=E2E8F0&color=334155"
@@ -173,8 +181,6 @@ const getPerformanceColor = (performance: AdminFacilityPerformance) => {
   if (performance === "normal") return "info"
   return "error"
 }
-
-const canToggleStatus = (status: FacilityStatus) => status !== "pending_approve"
 
 const getToggleTooltip = (status: FacilityStatus) => {
   if (status === "pending_approve") return "Cơ sở đang chờ duyệt"

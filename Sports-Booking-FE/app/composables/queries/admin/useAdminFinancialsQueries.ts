@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/vue-query"
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/vue-query"
 import { adminService } from "~/services/adminService"
 import type { AdminPayoutsQueryParams, AdminRefundsQueryParams } from "~/types/admin"
 
@@ -81,5 +81,25 @@ export function useAdminRefundsQuery(params: MaybeRef<AdminRefundsQueryParams>) 
     },
     placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
+  })
+}
+
+export function useSettlePayoutMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (ownerId: number) => adminService.settlePayout(ownerId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminFinancialsQueryKeys.all })
+    },
+  })
+}
+
+export function useApproveRefundMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (refundId: number) => adminService.approveRefund(refundId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminFinancialsQueryKeys.all })
+    },
   })
 }

@@ -7,7 +7,7 @@
         </aside>
 
         <section class="search-layout__content">
-          <SearchPageHeader city="Hồ Chí Minh" :total="total!" />
+          <SearchPageHeader v-if="isFromSearchHome" :city="keywordFromQuery || ''" :total="total!" />
 
           <SearchResultsToolbar v-model:sort-by="sortBy" v-model:view-mode="viewMode" />
 
@@ -41,6 +41,12 @@ import type { FacilityItem, PublicFacilityQueryParams } from "~/types/facility"
 definePageMeta({
   layout: "default",
 })
+
+const route = useRoute()
+
+const keywordFromQuery = computed(() => route.query.keyword as string | undefined)
+const dateFromQuery = computed(() => route.query.date as string | undefined)
+const isFromSearchHome = computed(() => !!keywordFromQuery.value || !!dateFromQuery.value)
 
 const page = ref<number>(1)
 const perPage = 6
@@ -102,6 +108,7 @@ const fetchFacilitiesFn = async () => {
     ...(filters.value.minPrice !== null && { minPrice: filters.value.minPrice }),
     ...(filters.value.maxPrice !== null && { maxPrice: filters.value.maxPrice }),
     ...(sortMap[sortBy.value] && { sort: sortMap[sortBy.value] }),
+    ...(keywordFromQuery.value && { q: keywordFromQuery.value }),
   }
 
   const response = await facilityService.getPublicFacilities(params)
@@ -119,6 +126,7 @@ const { data, isLoading, isError, error } = useQuery({
         maxPrice: debouncedMaxPrice.value,
       },
       sort: sortBy.value,
+      keyword: keywordFromQuery.value,
     },
   ]),
   queryFn: fetchFacilitiesFn,
@@ -130,7 +138,7 @@ const total = computed(() => data.value?.pagination.total)
 const totalPages = computed(() => data.value?.pagination.totalPages || 1)
 
 watch(
-  [filters, sortBy],
+  [filters, sortBy, keywordFromQuery],
   () => {
     page.value = 1
   },

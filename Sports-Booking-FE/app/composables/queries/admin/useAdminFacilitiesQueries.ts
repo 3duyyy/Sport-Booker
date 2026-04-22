@@ -58,3 +58,17 @@ export function useAdminUpdateFacilityStatusMutation() {
     },
   })
 }
+
+export function useAdminApproveFacilityMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (facilityId: number) => {
+      const response = await adminService.approveFacility(facilityId)
+      return response.data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminFacilitiesQueryKeys.all })
+    },
+  })
+}

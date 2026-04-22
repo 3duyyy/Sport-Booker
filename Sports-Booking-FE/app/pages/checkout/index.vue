@@ -29,6 +29,7 @@
               class="mt-4"
               :amount="bookingStore.payableAmount"
               :transfer-content="transferContent"
+              :loading="isPending"
               @confirm-paid="handleConfirmPaid"
               @cancel="openDialog"
             />
@@ -53,7 +54,9 @@
 </template>
 
 <script setup lang="ts">
+import { useCreateBookingMutation } from "~/composables/queries/my-bookings/useMyBookingQueries"
 import { useBookingStore } from "~/stores/booking.store"
+import type { CreateBookingPayload } from "~/types/booking"
 
 definePageMeta({
   layout: "default",
@@ -71,10 +74,21 @@ const transferContent = computed(() => {
   return `SB-${draft.facilityId}-${draft.fieldId}`
 })
 
+const { mutate: createBooking, isPending } = useCreateBookingMutation()
+
 function handleConfirmPaid() {
-  // mock trước
-  // sau này sẽ gọi API xác nhận / kiểm tra transaction
-  router.push("/dat-san/thanh-cong")
+  const draft = bookingStore.draft
+  if (!draft) return
+  const payload: CreateBookingPayload = {
+    fieldId: draft.fieldId,
+    date: draft.date,
+    slots: draft.slots.map((s) => ({
+      startTime: s.startTime,
+      endTime: s.endTime,
+    })),
+    paymentOption: bookingStore.paymentOption,
+  }
+  createBooking(payload)
 }
 
 function openDialog() {

@@ -1,3 +1,5 @@
+import type { PaginationMeta } from "./common"
+
 export type PaymentOption = "deposit" | "full"
 
 export interface BookingDraftSlot {
@@ -59,4 +61,48 @@ export interface CustomerBookingItem {
   canCancel?: boolean
   canViewReceipt?: boolean
   canPayRemainingAtVenue?: boolean
+
+  cancelBlockedReason?: string | null
+}
+
+export interface MyBookingsQueryParams {
+  page?: number
+  limit?: number
+  tab?: CustomerBookingTab | "all"
+}
+
+export interface CancelMyBookingPayload {
+  reason?: string
+}
+
+export interface CancelMyBookingResult {
+  id: number
+  status: "cancelled"
+  updatedAt: string
+}
+
+export interface MyBookingsListApiResponse {
+  success: boolean
+  data: CustomerBookingItem[]
+  pagination: PaginationMeta
+  tabCounts: Record<CustomerBookingTab, number>
+  message?: string
+}
+
+export interface CreateBookingPayload {
+  fieldId: number
+  date: string
+  slots: { startTime: string; endTime: string }[]
+  paymentOption: PaymentOption
+  note?: string
+}
+
+export interface CreateBookingResult {
+  id: number
+  status: string
+  paymentStatus: string
+  totalPrice: number
+  depositAmount: number
+  paidAmount: number
+  checkInCode: string
 }

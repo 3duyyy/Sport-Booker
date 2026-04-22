@@ -11,6 +11,26 @@ import type {
 } from "~/types/facility"
 import { axiosInstance } from "./axiosInstance"
 import type { ApiResponse } from "~/types/common"
+import type {
+  OwnerCalendarPayload,
+  OwnerCalendarQueryParams,
+  OwnerCheckInBookingItem,
+  OwnerCheckInHistoryPayload,
+  OwnerCheckInHistoryQueryParams,
+  OwnerCheckInSearchQueryParams,
+  OwnerCompleteCheckInPayload,
+  OwnerFacilitiesListPayload,
+  OwnerFacilitiesQueryParams,
+  OwnerFacilityDetailItem,
+  OwnerFacilityUpsertPayload,
+  OwnerFieldCreatePayload,
+  OwnerFieldDetailItem,
+  OwnerFieldPricingItem,
+  OwnerFieldUpsertPayload,
+  OwnerOverviewPayload,
+  OwnerOverviewQueryParams,
+  OwnerSetFieldPricesPayload,
+} from "~/types/owner"
 
 export const facilityService = {
   getPublicFacilities(query: PublicFacilityQueryParams) {
@@ -88,5 +108,70 @@ export const facilityService = {
       comment: review.comment || "",
       createdAt: review.createdAt,
     }))
+  },
+
+  // Private route
+  getOwnerOverview(params?: OwnerOverviewQueryParams) {
+    return axiosInstance.get<ApiResponse<OwnerOverviewPayload>>("/owner/overview", { params })
+  },
+
+  getOwnerFacilities(params: OwnerFacilitiesQueryParams) {
+    return axiosInstance.get<OwnerFacilitiesListPayload>("/owner/facilities", { params })
+  },
+
+  getOwnerCalendar(params: OwnerCalendarQueryParams) {
+    return axiosInstance.get<ApiResponse<OwnerCalendarPayload>>("/owner/calendar", { params })
+  },
+
+  getOwnerCheckInHistory(params?: OwnerCheckInHistoryQueryParams) {
+    return axiosInstance.get<{
+      success: boolean
+      data: OwnerCheckInHistoryPayload["data"]
+      pagination: OwnerCheckInHistoryPayload["pagination"]
+    }>("/owner/check-in/history", { params })
+  },
+
+  searchOwnerCheckInBooking(params: OwnerCheckInSearchQueryParams) {
+    return axiosInstance.get<ApiResponse<OwnerCheckInBookingItem | null>>("/owner/check-in/search", { params })
+  },
+
+  completeOwnerCheckIn(bookingId: number, payload: OwnerCompleteCheckInPayload) {
+    return axiosInstance.patch<ApiResponse<OwnerCheckInBookingItem>>(`/owner/check-in/${bookingId}/complete`, payload)
+  },
+
+  getOwnerFacilityDetail(facilityId: number) {
+    return axiosInstance.get<ApiResponse<OwnerFacilityDetailItem>>(`/owner/facilities/${facilityId}`)
+  },
+
+  createOwnerFacility(payload: OwnerFacilityUpsertPayload) {
+    return axiosInstance.post<ApiResponse<OwnerFacilityDetailItem>>("/owner/facilities", payload)
+  },
+
+  updateOwnerFacility(facilityId: number, payload: OwnerFacilityUpsertPayload) {
+    return axiosInstance.patch<ApiResponse<OwnerFacilityDetailItem>>(`/owner/facilities/${facilityId}`, payload)
+  },
+
+  deleteOwnerFacility(facilityId: number) {
+    return axiosInstance.delete<ApiResponse<null>>(`/owner/facilities/${facilityId}`)
+  },
+
+  createOwnerField(facilityId: number, payload: OwnerFieldCreatePayload) {
+    return axiosInstance.post<ApiResponse<OwnerFieldDetailItem>>(`/owner/facilities/${facilityId}/fields`, payload)
+  },
+
+  updateOwnerField(fieldId: number, payload: OwnerFieldUpsertPayload) {
+    return axiosInstance.patch<ApiResponse<OwnerFieldDetailItem>>(`/owner/fields/${fieldId}`, payload)
+  },
+
+  deleteOwnerField(fieldId: number) {
+    return axiosInstance.delete<ApiResponse<null>>(`/owner/fields/${fieldId}`)
+  },
+
+  getOwnerFieldPrices(fieldId: number) {
+    return axiosInstance.get<ApiResponse<OwnerFieldPricingItem[]>>(`/owner/fields/${fieldId}/prices`)
+  },
+
+  setOwnerFieldPrices(fieldId: number, payload: OwnerSetFieldPricesPayload) {
+    return axiosInstance.put<ApiResponse<OwnerFieldPricingItem[]>>(`/owner/fields/${fieldId}/prices`, payload)
   },
 }
