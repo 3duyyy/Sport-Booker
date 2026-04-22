@@ -18,6 +18,7 @@ interface PaymentVerificationRowRaw {
   id: number
   transactionId: number
   bookingId: number
+  bookingStatus: string
   customerName: string
   customerAvatarUrl: string | null
   facilityName: string
@@ -98,6 +99,7 @@ export class AdminPaymentVerificationsRepository {
         t.id AS id,
         t.id AS transactionId,
         b.id AS bookingId,
+        b.status AS bookingStatus,
         u.full_name AS customerName,
         u.avatar_url AS customerAvatarUrl,
         f.name AS facilityName,
@@ -138,6 +140,7 @@ export class AdminPaymentVerificationsRepository {
         id: row.id,
         transactionId: row.transactionId,
         bookingId: row.bookingId,
+        bookingStatus: row.bookingStatus,
         customerName: row.customerName,
         customerAvatarUrl: row.customerAvatarUrl,
         facilityName: row.facilityName,
@@ -164,7 +167,9 @@ export class AdminPaymentVerificationsRepository {
           booking: {
             select: {
               id: true,
-              totalPrice: true
+              totalPrice: true,
+              status: true,
+              userId: true
             }
           }
         }
@@ -208,12 +213,42 @@ export class AdminPaymentVerificationsRepository {
       const successfulPaidAmount = Number(paidAgg._sum.amount ?? 0)
       const totalPrice = Number(current.booking.totalPrice)
 
-      await tx.booking.update({
-        where: { id: current.booking.id },
-        data: {
-          paymentStatus: deriveBookingPaymentStatus(totalPrice, successfulPaidAmount)
+      if (action === 'approve') {
+        const isBookingDead = current.booking.status === 'cancelled' || current.booking.status === 'rejected'
+
+        if (isBookingDead) {
+          const user = await tx.user.findUnique({ where: { id: current.booking.userId } })
+          await tx.refundRequest.create({
+            data: {
+              bookingId: current.booking.id,
+              userId: current.booking.userId,
+              amount: current.amount,
+              status: 'pending',
+              bankName: user?.bankName || 'Chưa cập nhật',
+              bankAccount: user?.bankAccount || 'Chưa cập nhật',
+              accountHolder: user?.accountHolder || 'Chưa cập nhật'
+            }
+          })
+
+          await tx.booking.update({
+            where: { id: current.booking.id },
+            data: { paymentStatus: 'refunded' }
+          })
+        } else if (current.booking.status === 'pending') {
+          await tx.booking.update({
+            where: { id: current.booking.id },
+            data: {
+              status: 'confirmed',
+              paymentStatus: deriveBookingPaymentStatus(totalPrice, successfulPaidAmount)
+            }
+          })
         }
-      })
+      } else {
+        await tx.booking.update({
+          where: { id: current.booking.id },
+          data: { paymentStatus: deriveBookingPaymentStatus(totalPrice, successfulPaidAmount) }
+        })
+      }
 
       return updatedTx
     })

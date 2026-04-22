@@ -18,3 +18,7 @@ export const toPagination = (page: number, limit: number, total: number) => ({
   total,
   totalPages: Math.max(1, Math.ceil(total / limit))
 })
+
+export const formatBookingCode = (id: number) => {
+  return 'BK-' + String(id).padStart(6, '0')
+}

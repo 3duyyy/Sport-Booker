@@ -47,6 +47,63 @@ export class CreateFacilityDto {
   @IsArray()
   @IsString({ each: true })
   images?: string[]
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  utilityIds?: number[]
+}
+
+export class UpdateFacilityDto {
+  @IsOptional()
+  @IsString()
+  name?: string
+
+  @IsOptional()
+  @IsString()
+  address?: string
+
+  @IsOptional()
+  @IsString()
+  description?: string
+
+  @IsOptional()
+  @IsNumber()
+  sportId?: number
+
+  @IsOptional()
+  @IsString()
+  district?: string
+
+  @IsOptional()
+  @IsString()
+  city?: string
+
+  @IsOptional()
+  @IsNumber()
+  latitude?: number
+
+  @IsOptional()
+  @IsNumber()
+  longitude?: number
+
+  @IsOptional()
+  @IsString()
+  openTime?: string
+
+  @IsOptional()
+  @IsString()
+  closeTime?: string
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  images?: string[]
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  utilityIds?: number[]
 }
 
 export class CreateFieldDto {
@@ -57,6 +114,20 @@ export class CreateFieldDto {
   @IsOptional()
   @IsString()
   description?: string
+}
+
+export class UpdateFieldDto {
+  @IsOptional()
+  @IsString()
+  name?: string
+
+  @IsOptional()
+  @IsString()
+  description?: string
+
+  @IsOptional()
+  @IsIn(['active', 'maintenance', 'inactive'])
+  status?: 'active' | 'maintenance' | 'inactive'
 }
 
 export class PricingSlotDto {
@@ -119,4 +190,10 @@ export class FacilityQueryDto extends PaginationDto {
   @IsOptional()
   @IsIn(['newest', 'rating', 'price_asc', 'price_desc'])
   sort?: string
+}
+
+export class OwnerCompleteCheckInDto {
+  @IsOptional()
+  @IsBoolean()
+  collectedRemaining?: boolean
 }

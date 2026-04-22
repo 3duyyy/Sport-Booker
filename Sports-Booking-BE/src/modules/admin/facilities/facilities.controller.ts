@@ -94,4 +94,23 @@ export class AdminFacilitiesController {
       next(error)
     }
   }
+
+  static async approve(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = Number(req.params.id)
+      if (!Number.isInteger(id) || id <= 0) {
+        throw new AppError('id không hợp lệ', StatusCodes.BAD_REQUEST)
+      }
+
+      const data = await AdminFacilitiesService.approve(id)
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data,
+        message: 'Phê duyệt cơ sở thành công'
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
 }

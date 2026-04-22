@@ -1,4 +1,6 @@
+import { StatusCodes } from 'http-status-codes'
 import { Prisma } from '../../../../generated/prisma'
+import { AppError } from '../../../shared/exceptions'
 import { prisma } from '../../../shared/prisma/client'
 import { FindManyPayoutsParams, FindManyRefundsParams } from '../../../shared/types/admin'
 import { toNumber, toPagination } from '../../../shared/utils/utils'
@@ -7,7 +9,8 @@ export class AdminFinancialsRepository {
   static async getSummary() {
     const payoutWhere: Prisma.BookingWhereInput = {
       status: 'completed',
-      paymentStatus: 'paid',
+      paymentStatus: { in: ['paid', 'partially_paid'] },
+      isSettled: false,
       transactions: {
         some: {
           type: 'payment',
@@ -42,88 +45,64 @@ export class AdminFinancialsRepository {
   }
 
   static async getPayouts(params: FindManyPayoutsParams) {
-    const skip = (params.page - 1) * params.limit
-    const isNumericKeyword = params.keyword ? /^\d+$/.test(params.keyword) : false
-
-    const where: Prisma.BookingWhereInput = {
-      status: 'completed',
-      paymentStatus: 'paid',
-      transactions: {
-        some: {
-          type: 'payment',
-          status: 'success'
-        }
-      },
-      ...(params.keyword
-        ? {
-            OR: [
-              {
-                field: {
-                  facility: {
-                    name: { contains: params.keyword }
-                  }
-                }
-              },
-              {
-                field: {
-                  facility: {
-                    owner: {
-                      fullName: { contains: params.keyword }
-                    }
-                  }
-                }
-              },
-              ...(isNumericKeyword ? [{ id: Number(params.keyword) }] : [])
-            ]
-          }
-        : {})
+    const limit = params.limit
+    const offset = (params.page - 1) * limit
+    const keyword = params.keyword ? `%${params.keyword}%` : null
+    const keywordQuery = keyword ? Prisma.sql`AND (u.full_name LIKE ${keyword} OR fac.name LIKE ${keyword})` : Prisma.empty
+    const countQuery = await prisma.$queryRaw<{ total: bigint }[]>`
+      SELECT COUNT(DISTINCT u.id) as total
+      FROM bookings b
+      JOIN fields f ON b.field_id = f.id
+      JOIN facilities fac ON f.facility_id = fac.id
+      JOIN users u ON fac.owner_id = u.id
+      WHERE b.status = 'completed' AND b.payment_status IN ('paid', 'partially_paid') AND b.is_settled = false
+      ${keywordQuery}
+    `
+    const total = Number(countQuery[0]?.total || 0)
+    let rows: any[] = []
+    if (params.sortBy === 'amount' && params.sortOrder === 'desc') {
+      rows = await prisma.$queryRaw`
+        SELECT u.id as ownerId, u.full_name as ownerName, u.bank_name as bankName, u.bank_account as bankAccount, u.account_holder as accountHolder, CAST(COUNT(b.id) AS UNSIGNED) as bookingCount, 
+        SUM(CASE WHEN b.payment_status = 'paid' THEN b.total_price WHEN b.payment_status = 'partially_paid' THEN b.deposit_amount ELSE 0 END) as payoutAmount
+        FROM bookings b JOIN fields f ON b.field_id = f.id JOIN facilities fac ON f.facility_id = fac.id JOIN users u ON fac.owner_id = u.id
+        WHERE b.status = 'completed' AND b.payment_status IN ('paid', 'partially_paid') AND b.is_settled = false ${keywordQuery}
+        GROUP BY u.id ORDER BY payoutAmount DESC LIMIT ${limit} OFFSET ${offset}
+      `
+    } else if (params.sortBy === 'amount' && params.sortOrder === 'asc') {
+      rows = await prisma.$queryRaw`
+        SELECT u.id as ownerId, u.full_name as ownerName, u.bank_name as bankName, u.bank_account as bankAccount, u.account_holder as accountHolder, CAST(COUNT(b.id) AS UNSIGNED) as bookingCount, 
+        SUM(CASE WHEN b.payment_status = 'paid' THEN b.total_price WHEN b.payment_status = 'partially_paid' THEN b.deposit_amount ELSE 0 END) as payoutAmount
+        FROM bookings b JOIN fields f ON b.field_id = f.id JOIN facilities fac ON f.facility_id = fac.id JOIN users u ON fac.owner_id = u.id
+        WHERE b.status = 'completed' AND b.payment_status IN ('paid', 'partially_paid') AND b.is_settled = false ${keywordQuery}
+        GROUP BY u.id ORDER BY payoutAmount ASC LIMIT ${limit} OFFSET ${offset}
+      `
+    } else if (params.sortOrder === 'desc') {
+      rows = await prisma.$queryRaw`
+        SELECT u.id as ownerId, u.full_name as ownerName, u.bank_name as bankName, u.bank_account as bankAccount, u.account_holder as accountHolder, CAST(COUNT(b.id) AS UNSIGNED) as bookingCount, 
+        SUM(CASE WHEN b.payment_status = 'paid' THEN b.total_price WHEN b.payment_status = 'partially_paid' THEN b.deposit_amount ELSE 0 END) as payoutAmount
+        FROM bookings b JOIN fields f ON b.field_id = f.id JOIN facilities fac ON f.facility_id = fac.id JOIN users u ON fac.owner_id = u.id
+        WHERE b.status = 'completed' AND b.payment_status IN ('paid', 'partially_paid') AND b.is_settled = false ${keywordQuery}
+        GROUP BY u.id ORDER BY bookingCount DESC LIMIT ${limit} OFFSET ${offset}
+      `
+    } else {
+      rows = await prisma.$queryRaw`
+        SELECT u.id as ownerId, u.full_name as ownerName, u.bank_name as bankName, u.bank_account as bankAccount, u.account_holder as accountHolder, CAST(COUNT(b.id) AS UNSIGNED) as bookingCount, 
+        SUM(CASE WHEN b.payment_status = 'paid' THEN b.total_price WHEN b.payment_status = 'partially_paid' THEN b.deposit_amount ELSE 0 END) as payoutAmount
+        FROM bookings b JOIN fields f ON b.field_id = f.id JOIN facilities fac ON f.facility_id = fac.id JOIN users u ON fac.owner_id = u.id
+        WHERE b.status = 'completed' AND b.payment_status IN ('paid', 'partially_paid') AND b.is_settled = false ${keywordQuery}
+        GROUP BY u.id ORDER BY bookingCount ASC LIMIT ${limit} OFFSET ${offset}
+      `
     }
-
-    const orderBy: Prisma.BookingOrderByWithRelationInput =
-      params.sortBy === 'amount' ? { totalPrice: params.sortOrder } : { createdAt: params.sortOrder }
-
-    const [rows, total] = await Promise.all([
-      prisma.booking.findMany({
-        where,
-        skip,
-        take: params.limit,
-        orderBy,
-        select: {
-          id: true,
-          totalPrice: true,
-          field: {
-            select: {
-              facility: {
-                select: {
-                  name: true,
-                  owner: {
-                    select: {
-                      fullName: true,
-                      bankName: true,
-                      bankAccount: true,
-                      accountHolder: true
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }),
-      prisma.booking.count({ where })
-    ])
-
     return {
       data: rows.map((item) => ({
-        id: item.id,
-        bookingId: item.id,
-        bookingCode: '#BK-' + item.id,
-        ownerName: item.field.facility.owner.fullName || 'Chưa cập nhật',
-        facilityName: item.field.facility.name || 'Chưa cập nhật',
-        bankName: item.field.facility.owner.bankName || 'Chưa cập nhật',
-        bankAccount: item.field.facility.owner.bankAccount || 'Chưa cập nhật',
-        accountHolder: item.field.facility.owner.accountHolder || 'Chưa cập nhật',
-        payoutAmount: toNumber(item.totalPrice)
+        id: item.ownerId,
+        ownerId: item.ownerId,
+        ownerName: item.ownerName || 'Chưa cập nhật',
+        bankName: item.bankName || 'Chưa cập nhật',
+        bankAccount: item.bankAccount || 'Chưa cập nhật',
+        accountHolder: item.accountHolder || 'Chưa cập nhật',
+        bookingCount: Number(item.bookingCount),
+        payoutAmount: toNumber(item.payoutAmount)
       })),
       pagination: toPagination(params.page, params.limit, total)
     }
@@ -189,5 +168,40 @@ export class AdminFinancialsRepository {
       })),
       pagination: toPagination(params.page, params.limit, total)
     }
+  }
+
+  static async settlePayout(ownerId: number) {
+    const updated = await prisma.booking.updateMany({
+      where: {
+        field: { facility: { ownerId: ownerId } },
+        status: 'completed',
+        paymentStatus: { in: ['paid', 'partially_paid'] }
+      },
+      data: { isSettled: true }
+    })
+    return { count: updated.count }
+  }
+
+  static async approveRefund(refundRequestId: number) {
+    const refund = await prisma.refundRequest.findUnique({
+      where: { id: refundRequestId }
+    })
+
+    if (!refund) throw new AppError('Không tìm thấy yêu cầu hoàn tiền', StatusCodes.NOT_FOUND)
+    if (refund.status !== 'pending') throw new AppError('Yêu cầu này đã được xử lý', StatusCodes.CONFLICT)
+
+    return prisma.$transaction(async (tx) => {
+      const updatedRefund = await tx.refundRequest.update({
+        where: { id: refundRequestId },
+        data: { status: 'approved' }
+      })
+
+      await tx.booking.update({
+        where: { id: refund.bookingId },
+        data: { paymentStatus: 'refunded' }
+      })
+
+      return updatedRefund
+    })
   }
 }

@@ -8,6 +8,7 @@ import morgan from 'morgan'
 import { env } from './config/env.config'
 import { api } from './routes'
 import { errorMiddleware } from './middlewares/error.middleware'
+import { startBookingExpiryJob } from './jobs/booking-expiry.job'
 
 const app = express()
 app.use(compression())
@@ -31,4 +32,5 @@ app.use(errorMiddleware)
 
 app.listen(env.PORT, () => {
   console.log(`Server run on Port: ${env.PORT}`)
+  startBookingExpiryJob()
 })

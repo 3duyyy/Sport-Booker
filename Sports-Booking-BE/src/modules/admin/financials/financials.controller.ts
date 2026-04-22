@@ -93,4 +93,44 @@ export class AdminFinancialsController {
       next(error)
     }
   }
+
+  static async settlePayout(req: Request, res: Response, next: NextFunction) {
+    try {
+      const ownerId = Number(req.params.ownerId)
+
+      if (!ownerId || isNaN(ownerId)) {
+        throw new AppError('Owner ID không hợp lệ', StatusCodes.BAD_REQUEST)
+      }
+
+      const result = await AdminFinancialsService.settlePayout(ownerId)
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: 'Thanh toán thành công',
+        data: result
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  static async approveRefund(req: Request, res: Response, next: NextFunction) {
+    try {
+      const refundId = Number(req.params.refundId)
+
+      if (!refundId || isNaN(refundId)) {
+        throw new AppError('Refund ID không hợp lệ', StatusCodes.BAD_REQUEST)
+      }
+
+      const result = await AdminFinancialsService.approveRefund(refundId)
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: 'Xác nhận hoàn tiền thành công',
+        data: result
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
 }

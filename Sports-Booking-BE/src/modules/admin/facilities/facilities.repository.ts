@@ -196,4 +196,22 @@ export class AdminFacilitiesRepository {
       }
     })
   }
+
+  static async approvePendingForAdmin(id: number) {
+    const result = await prisma.facility.updateMany({
+      where: { id, status: 'pending_approve' },
+      data: { status: 'active' }
+    })
+
+    if (result.count === 0) return null
+
+    return prisma.facility.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        updatedAt: true
+      }
+    })
+  }
 }

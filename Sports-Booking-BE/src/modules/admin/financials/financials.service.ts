@@ -13,4 +13,12 @@ export class AdminFinancialsService {
   static async getRefunds(params: FindManyRefundsParams) {
     return AdminFinancialsRepository.getRefunds(params)
   }
+
+  static async settlePayout(ownerId: number) {
+    return AdminFinancialsRepository.settlePayout(ownerId)
+  }
+
+  static async approveRefund(refundRequestId: number) {
+    return AdminFinancialsRepository.approveRefund(refundRequestId)
+  }
 }

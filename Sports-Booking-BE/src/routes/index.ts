@@ -6,6 +6,7 @@ import { sportsRoutes } from '../modules/sports/sports.route'
 import { utilitiesRoutes } from '../modules/utilities/utilities.route'
 import { adminRoutes } from '../modules/admin/admin.route'
 import { usersRoute } from '../modules/users/users.route'
+import { bookingsRoutes } from '../modules/bookings/bookings.route'
 
 const router = Router()
 
@@ -16,5 +17,6 @@ router.use('/sports', sportsRoutes)
 router.use('/utilities', utilitiesRoutes)
 router.use('/admin', adminRoutes)
 router.use('/users', usersRoute)
+router.use('/bookings', bookingsRoutes)
 
 export const api = router

@@ -44,4 +44,26 @@ export class AdminFacilitiesService {
       updatedAt: updated.updatedAt.toISOString()
     }
   }
+
+  static async approve(id: number) {
+    const current = await AdminFacilitiesRepository.findByIdForAdmin(id)
+    if (!current) {
+      throw new AppError('Không tìm thấy cơ sở', StatusCodes.NOT_FOUND)
+    }
+
+    if (current.status !== 'pending_approve') {
+      throw new AppError('Chỉ có thể phê duyệt cơ sở đang chờ duyệt', StatusCodes.BAD_REQUEST)
+    }
+
+    const updated = await AdminFacilitiesRepository.approvePendingForAdmin(id)
+    if (!updated) {
+      throw new AppError('Không thể phê duyệt do trạng thái đã thay đổi', StatusCodes.CONFLICT)
+    }
+
+    return {
+      id: updated.id,
+      status: updated.status,
+      updatedAt: updated.updatedAt.toISOString()
+    }
+  }
 }
