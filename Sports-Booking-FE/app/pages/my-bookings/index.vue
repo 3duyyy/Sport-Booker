@@ -13,6 +13,9 @@ useSeoMeta({
   title: "Lịch đặt của tôi",
 })
 
+const authStore = useAuthStore()
+const router = useRouter()
+
 const activeTab = ref<CustomerBookingTab>("pending_confirmation")
 const page = ref(1)
 const limit = ref(10)
@@ -70,6 +73,13 @@ const openCancelDialog = (payload: { bookingId: number; bookingCode: string }) =
 
   if (target.canCancel === false) {
     toast.warning(target.cancelBlockedReason || "Không thể hủy lịch trong vòng 2 tiếng trước giờ bắt đầu")
+    return
+  }
+
+  const user = authStore.user
+  if (!user?.bankName || !user?.bankAccount || !user?.accountHolder) {
+    toast.warning("Vui lòng cập nhật thông tin tài khoản ngân hàng để nhận tiền hoàn trước khi hủy lịch!")
+    router.push("/profile")
     return
   }
 

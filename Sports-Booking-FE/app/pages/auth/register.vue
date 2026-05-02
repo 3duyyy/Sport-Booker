@@ -106,6 +106,8 @@ definePageMeta({
   layout: "auth",
 })
 
+const authStore = useAuthStore()
+
 const router = useRouter()
 
 const showPassword = ref<boolean>(false)
@@ -129,7 +131,15 @@ const onSubmit = handleSubmit(async (payload: RegisterInput) => {
   try {
     const { confirmPassword, ...submitData } = payload
 
-    await authService.register(submitData)
+    const res = await authService.register(submitData)
+
+    const token = res.data.data.accessToken
+    if (import.meta.client) {
+      localStorage.setItem("access_token", token)
+    }
+
+    const user = res.data.data.user
+    authStore.setUser(user)
 
     toast.success("Đăng ký thành công! Đang chuyển hướng...")
     router.push("/")

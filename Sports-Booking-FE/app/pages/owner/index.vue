@@ -19,7 +19,7 @@
         </p>
       </div>
 
-      <OwnerCustomerIntro v-if="isCustomer" />
+      <OwnerCustomerIntro v-if="isCustomer" @create="openFacilityCreate" />
 
       <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div class="lg:col-span-4 xl:col-span-3">
@@ -117,72 +117,74 @@
               Trước mắt bạn có thể dùng tab Tổng quan để theo dõi nhanh hoạt động của sân.
             </p>
           </v-card>
-
-          <OwnerFacilityDialog
-            :open="facilityDialogOpen"
-            :mode="facilityDialogMode"
-            :saving="facilityDialogSaving"
-            :sport-options="sportOptions"
-            :utility-options="utilityOptions"
-            :initial-data="facilityInitialData"
-            :field-items="visibleDraftFields"
-            @close="facilityDialogOpen = false"
-            @submit-facility="onSubmitFacilityDialog"
-            @add-field="onAddFieldClick"
-            @edit-field="onEditFieldClick"
-            @delete-field="askDeleteField"
-            @set-prices="onSetPricesClick"
-          />
-
-          <OwnerFieldDialog
-            :open="fieldDialogOpen"
-            :mode="fieldDialogMode"
-            :saving="fieldDialogSaving"
-            :initial-data="
-              selectedDraftField
-                ? {
-                    name: selectedDraftField.name,
-                    description: selectedDraftField.description,
-                    status: selectedDraftField.status,
-                  }
-                : null
-            "
-            @close="fieldDialogOpen = false"
-            @submit="onSubmitFieldDialog"
-          />
-
-          <OwnerFieldPricingDialog
-            :open="pricingDialogOpen"
-            :saving="pricingDialogSaving"
-            :view-mode="facilityDialogMode === 'view'"
-            :initial-pricings="pricingInitial"
-            @close="pricingDialogOpen = false"
-            @submit="onSubmitPricingDialog"
-          />
-
-          <ConfirmDialog
-            v-model="deleteFacilityConfirmOpen"
-            title="Xóa cụm sân"
-            message="Bạn chắc chắn muốn xóa cụm sân này?"
-            confirm-text="Xóa"
-            cancel-text="Hủy"
-            confirm-color="error"
-            :is-loading="deleteFacilityMutation.isPending.value"
-            @confirm="confirmDeleteFacility"
-          />
-
-          <ConfirmDialog
-            v-model="deleteFieldConfirmOpen"
-            title="Xóa sân con"
-            message="Bạn chắc chắn muốn xóa sân con này?"
-            confirm-text="Xóa"
-            cancel-text="Hủy"
-            confirm-color="error"
-            :is-loading="false"
-            @confirm="confirmDeleteField"
-          />
         </div>
       </div>
+
+      <OwnerFacilityDialog
+        :open="facilityDialogOpen"
+        :mode="facilityDialogMode"
+        :saving="facilityDialogSaving"
+        :sport-options="sportOptions"
+        :utility-options="utilityOptions"
+        :initial-data="facilityInitialData"
+        :field-items="visibleDraftFields"
+        @close="facilityDialogOpen = false"
+        @submit-facility="onSubmitFacilityDialog"
+        @add-field="onAddFieldClick"
+        @edit-field="onEditFieldClick"
+        @delete-field="askDeleteField"
+        @set-prices="onSetPricesClick"
+      />
+
+      <OwnerFieldDialog
+        :open="fieldDialogOpen"
+        :mode="fieldDialogMode"
+        :saving="fieldDialogSaving"
+        :initial-data="
+          selectedDraftField
+            ? {
+                name: selectedDraftField.name,
+                description: selectedDraftField.description,
+                status: selectedDraftField.status,
+              }
+            : null
+        "
+        @close="fieldDialogOpen = false"
+        @submit="onSubmitFieldDialog"
+      />
+
+      <OwnerFieldPricingDialog
+        :open="pricingDialogOpen"
+        :saving="pricingDialogSaving"
+        :view-mode="facilityDialogMode === 'view'"
+        :initial-pricings="pricingInitial"
+        :facility-open-time="pricingFacilityOpenTime"
+        :facility-close-time="pricingFacilityCloseTime"
+        @close="pricingDialogOpen = false"
+        @submit="onSubmitPricingDialog"
+      />
+
+      <ConfirmDialog
+        v-model="deleteFacilityConfirmOpen"
+        title="Xóa cụm sân"
+        message="Bạn chắc chắn muốn xóa cụm sân này?"
+        confirm-text="Xóa"
+        cancel-text="Hủy"
+        confirm-color="error"
+        :is-loading="deleteFacilityMutation.isPending.value"
+        @confirm="confirmDeleteFacility"
+      />
+
+      <ConfirmDialog
+        v-model="deleteFieldConfirmOpen"
+        title="Xóa sân con"
+        message="Bạn chắc chắn muốn xóa sân con này?"
+        confirm-text="Xóa"
+        cancel-text="Hủy"
+        confirm-color="error"
+        :is-loading="false"
+        @confirm="confirmDeleteField"
+      />
     </div>
   </div>
 </template>
@@ -250,6 +252,8 @@ definePageMeta({
   layout: "default",
 })
 
+const authStore = useAuthStore()
+
 const activeTab = ref<OwnerSidebarKey>("overview")
 const userRoleId = ref<number | null>(null)
 
@@ -263,6 +267,9 @@ const facilitiesPage = ref(1)
 const facilitiesLimit = ref(5)
 const facilitiesKeyword = ref("")
 const facilitiesStatus = ref<"all" | OwnerFacilityStatus>("all")
+
+const pricingFacilityOpenTime = ref("00:00")
+const pricingFacilityCloseTime = ref("23:59")
 
 const defaultFrom = new Date()
 defaultFrom.setHours(0, 0, 0, 0)
@@ -753,9 +760,11 @@ const onSubmitFieldDialog = (payload: {
 }
 
 // pricing local-only
-const onSetPricesClick = (clientId: string) => {
+const onSetPricesClick = (payload: { clientId: string; openTime: string; closeTime: string }) => {
   if (facilityDialogMode.value === "view") return
-  selectedFieldClientId.value = clientId
+  selectedFieldClientId.value = payload.clientId
+  pricingFacilityOpenTime.value = payload.openTime
+  pricingFacilityCloseTime.value = payload.closeTime
   pricingDialogOpen.value = true
 }
 
@@ -821,6 +830,16 @@ const onSubmitFacilityDialog = async (facilityPayload: OwnerFacilityUpsertPayloa
     if (facilityDialogMode.value === "create") {
       const created = await createFacilityMutation.mutateAsync(facilityPayload)
       facilityId = created.id
+
+      // Nếu user đang là Customer, tạo xong thì cập nhật thành Owner
+      if (authStore.user && authStore.user.roleId === 3) {
+        authStore.setUser({
+          ...authStore.user,
+          roleId: 2,
+        })
+        // Cập nhật lại state của màn hình hiện tại luôn để ẩn Intro
+        userRoleId.value = 2
+      }
     } else {
       if (!selectedFacilityId.value) return
       facilityId = selectedFacilityId.value

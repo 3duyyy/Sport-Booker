@@ -82,6 +82,42 @@
                   :readonly="isViewMode"
                 />
               </v-col>
+
+              <!-- Upload ảnh -->
+              <v-col cols="12">
+                <p class="text-subtitle-2 font-weight-bold mb-2">Hình ảnh cụm sân (Tối đa 4 ảnh)</p>
+
+                <div class="d-flex flex-wrap gap-4 mb-2">
+                  <v-card
+                    v-if="previewImages.length < 4"
+                    class="d-flex flex-column align-center justify-center border-dashed border-2 border-slate-300 bg-slate-50 cursor-pointer"
+                    width="120"
+                    height="120"
+                    flat
+                    @click="fileInput?.click()"
+                  >
+                    <v-icon size="32" color="success" :icon="mdiCloudUpload" />
+                    <span class="text-caption mt-2 text-slate-500">Thêm ảnh</span>
+                  </v-card>
+
+                  <!-- Các ảnh đã chọn / preview -->
+                  <v-card v-for="(img, idx) in previewImages" :key="idx" width="120" height="120" class="position-relative">
+                    <v-img :src="img.url" cover width="100%" height="100%" />
+                    <v-btn
+                      :icon="mdiClose"
+                      size="x-small"
+                      color="error"
+                      variant="flat"
+                      class="position-absolute right-0 top-0 mt-1 mr-1"
+                      @click="removeImage(idx)"
+                    />
+                  </v-card>
+                </div>
+
+                <input ref="fileInput" type="file" class="d-none" accept="image/*" multiple @change="onFileChange" />
+                <p v-if="uploadError" class="text-caption text-error">{{ uploadError }}</p>
+              </v-col>
+
               <v-col cols="12">
                 <v-combobox
                   v-model="utilityIdsModel"
@@ -118,10 +154,10 @@
               </thead>
               <tbody>
                 <tr v-for="f in fields" :key="f.clientId">
-                  <td>{{ f.name }}</td>
-                  <td>{{ f.status }}</td>
-                  <td>{{ f.pricings.length }}</td>
-                  <td class="text-right">
+                  <td class="text-center">{{ f.name }}</td>
+                  <td class="text-center">{{ f.status }}</td>
+                  <td class="text-center">{{ f.pricings.length }}</td>
+                  <td class="text-center">
                     <v-btn
                       size="small"
                       variant="text"
@@ -135,7 +171,13 @@
                       variant="text"
                       color="warning"
                       :disabled="isViewMode"
-                      @click="emit('set-prices', f.clientId)"
+                      @click="
+                        emit('set-prices', {
+                          clientId: f.clientId,
+                          openTime: openTime || '00:00',
+                          closeTime: closeTime || '23:59',
+                        })
+                      "
                       >Set giá</v-btn
                     >
                     <v-btn
@@ -161,7 +203,7 @@
 
       <v-card-actions class="justify-end pa-4">
         <v-btn variant="tonal" @click="emit('close')">Đóng</v-btn>
-        <v-btn v-if="!isViewMode" color="success" variant="flat" :loading="saving" @click="onSubmit">
+        <v-btn v-if="!isViewMode" color="success" variant="flat" :loading="saving || isUploadingFiles" @click="onSubmit">
           {{ mode === "create" ? "Tạo mới" : "Lưu thay đổi" }}
         </v-btn>
       </v-card-actions>
@@ -170,10 +212,18 @@
 </template>
 
 <script setup lang="ts">
+import { mdiClose, mdiCloudUpload } from "@mdi/js"
 import { toTypedSchema } from "@vee-validate/zod"
 import { useForm } from "vee-validate"
 import { ownerFacilitySchema } from "~/schemas/ownerFacilitySchema"
+import { axiosInstance } from "~/services/axiosInstance"
 import type { OwnerFacilityDetailItem, OwnerFacilityUpsertPayload } from "~/types/owner"
+
+type ImagePreview = {
+  url: string
+  file?: File
+  isOld: boolean
+}
 
 const props = withDefaults(
   defineProps<{
@@ -205,10 +255,16 @@ const emit = defineEmits<{
   (e: "add-field"): void
   (e: "edit-field", clientId: string): void
   (e: "delete-field", clientId: string): void
-  (e: "set-prices", clientId: string): void
+  (e: "set-prices", payload: { clientId: string; openTime: string; closeTime: string }): void
 }>()
 
 const tab = ref<"facility" | "fields">("facility")
+
+const fileInput = ref<HTMLInputElement | null>(null)
+const uploadError = ref("")
+const isUploadingFiles = ref(false)
+const previewImages = ref<ImagePreview[]>([])
+
 const isViewMode = computed(() => props.mode === "view")
 const title = computed(() =>
   props.mode === "create" ? "Tạo cụm sân" : props.mode === "edit" ? "Cập nhật cụm sân" : "Chi tiết cụm sân",
@@ -291,21 +347,101 @@ watch(
   { immediate: true },
 )
 
-const onSubmit = handleSubmit((v) => {
-  if (isViewMode.value) return
+// Khi Edit: Gắn mảng ảnh cũ vào UI Preview
+watch(
+  () => props.initialData,
+  (newVal) => {
+    if (newVal && newVal.images) {
+      previewImages.value = newVal.images.map((img) => ({
+        url: img.imageUrl,
+        isOld: true,
+      }))
+    } else {
+      previewImages.value = []
+    }
+  },
+  { immediate: true },
+)
 
-  emit("submit-facility", {
-    name: v.name.trim(),
-    sportId: Number(v.sportId),
-    address: v.address.trim(),
-    district: v.district?.trim() || "",
-    city: v.city?.trim() || "",
-    openTime: v.openTime,
-    closeTime: v.closeTime,
-    description: v.description?.trim() || "",
-    utilityIds: Array.isArray(v.utilityIds)
-      ? [...new Set(v.utilityIds.map((item) => Number(item)).filter((item) => Number.isInteger(item) && item > 0))]
-      : [],
+// Xử lý khi chọn file
+const onFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (!target.files) return
+  const newFiles = Array.from(target.files)
+
+  if (previewImages.value.length + newFiles.length > 4) {
+    uploadError.value = "Chỉ được phép tải lên tối đa 4 ảnh!"
+    return
+  }
+
+  uploadError.value = ""
+
+  newFiles.forEach((file) => {
+    previewImages.value.push({
+      url: URL.createObjectURL(file), // Link ảo preview
+      file: file,
+      isOld: false,
+    })
   })
+
+  // Reset input value để chọn lại file cũ ko bị lỗi
+  if (fileInput.value) fileInput.value.value = ""
+}
+
+const removeImage = (index: number) => {
+  const targetImg = previewImages.value[index]
+  if (!targetImg) return
+  // Nếu là link ảo thì thu hồi bộ nhớ
+  if (!targetImg.isOld) {
+    URL.revokeObjectURL(targetImg.url)
+  }
+
+  previewImages.value.splice(index, 1)
+  uploadError.value = ""
+}
+
+const onSubmit = handleSubmit(async (v) => {
+  try {
+    isUploadingFiles.value = true
+    uploadError.value = ""
+
+    // 1. Chạy loop: Tách và up tuần tự các ảnh mới lên Backend
+    const finalImageUrls: string[] = []
+
+    for (const img of previewImages.value) {
+      if (img.isOld) {
+        // Ảnh cũ -> giữ nguyên URL
+        finalImageUrls.push(img.url)
+      } else if (img.file) {
+        // Ảnh mới -> Gọi API Upload
+        const formData = new FormData()
+        formData.append("image", img.file)
+
+        const uploadRes = await axiosInstance.post("/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        finalImageUrls.push(uploadRes.data.data.url) // Lấy URL trả về
+      }
+    }
+
+    emit("submit-facility", {
+      name: v.name.trim(),
+      sportId: Number(v.sportId),
+      address: v.address.trim(),
+      district: v.district?.trim() || "",
+      city: v.city?.trim() || "",
+      openTime: v.openTime,
+      closeTime: v.closeTime,
+      description: v.description?.trim() || "",
+      utilityIds: Array.isArray(v.utilityIds)
+        ? [...new Set(v.utilityIds.map((item) => Number(item)).filter((item) => Number.isInteger(item) && item > 0))]
+        : [],
+      images: finalImageUrls,
+    })
+  } catch (error) {
+    uploadError.value = "Lỗi khi tải ảnh lên máy chủ, vui lòng thử lại!"
+  } finally {
+    isUploadingFiles.value = false
+  }
 })
 </script>

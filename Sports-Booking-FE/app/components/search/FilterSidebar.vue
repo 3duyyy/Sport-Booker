@@ -105,13 +105,17 @@ const hanoiDistricts = [
   { value: "hoang-mai", label: "Quận Hoàng Mai" },
   { value: "long-bien", label: "Quận Long Biên" },
   { value: "tay-ho", label: "Quận Tây Hồ" },
+  { value: "nam-tu-liem", label: "Quận Nam Từ Liêm" },
+  { value: "ha-dong", label: "Quận Hà Đông" },
+  { value: "dong-anh", label: "Huyện Đông Anh" },
 ]
 
 const sportOptions = [
   { label: "Bóng đá", value: "football" },
+  { label: "Cầu lông", value: "badminton" },
   { label: "Tennis", value: "tennis" },
   { label: "Bóng rổ", value: "basketball" },
-  { label: "Bơi lội", value: "swimming" },
+  { label: "Pickleball", value: "pickleball" },
 ]
 
 const amenityOptions = [

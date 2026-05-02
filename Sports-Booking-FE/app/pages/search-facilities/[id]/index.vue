@@ -1,6 +1,6 @@
 <template>
   <div class="container-layout facility-detail-page">
-    <v-container class="max-w-7xl">
+    <v-container class="max-w-7xl" v-if="facility">
       <FacilityDetailHeader :facility="facility!" />
 
       <FacilityDetailGallery v-model="activeImage" :facility="facility!" class="mt-6" />
@@ -53,7 +53,6 @@ definePageMeta({
 })
 
 const bookingStore = useBookingStore()
-const router = useRouter()
 const route = useRoute()
 
 const facilityId = computed(() => Number(route.params.id))
@@ -205,7 +204,7 @@ function getToday() {
   return `${y}-${m}-${d}`
 }
 
-function handleConfirmBooking() {
+async function handleConfirmBooking() {
   if (!selectedField.value || !facility.value || selectedSlotIds.value.length === 0) return
 
   bookingStore.setDraft({
@@ -226,7 +225,7 @@ function handleConfirmBooking() {
     totalPrice: selectedPrice.value,
   })
 
-  router.push("/checkout")
+  await navigateTo("/checkout")
 }
 </script>
 

@@ -11,4 +11,13 @@ export const authService = {
   logout() {
     return axiosInstance.post("auth/logout")
   },
+  forgotPassword(email: string) {
+    return axiosInstance.post("/auth/forgot-password", { email })
+  },
+  verifyOtp(email: string, otp: string) {
+    return axiosInstance.post("/auth/verify-otp", { email, otp })
+  },
+  resetPassword(data: any) {
+    return axiosInstance.post("/auth/reset-password", data)
+  },
 }

@@ -11,6 +11,7 @@ export const ownerFacilitySchema = z
     closeTime: z.string().regex(/^\d{2}:\d{2}$/, "Định dạng HH:mm"),
     description: z.string().optional(),
     utilityIds: z.array(z.number()).optional(),
+    images: z.array(z.string()).max(4, "Tối đa 4 ảnh").optional(),
   })
   .refine((v) => v.openTime < v.closeTime, {
     path: ["closeTime"],

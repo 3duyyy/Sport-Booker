@@ -7,6 +7,9 @@ export interface User {
   roleId: number
   status: string
   isVerified: boolean
+  bankName?: string | null
+  bankAccount?: string | null
+  accountHolder?: string | null
 }
 
 interface AuthState {

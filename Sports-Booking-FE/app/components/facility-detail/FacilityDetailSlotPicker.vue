@@ -40,8 +40,8 @@
             :key="slot.id"
             type="button"
             class="slot-btn"
-            :class="getSlotClass(field.id, slot.id, slot.isBooked)"
-            :disabled="slot.isBooked"
+            :class="getSlotClass(field.id, slot.id, slot.isBooked || isSlotPassed(slot.startTime))"
+            :disabled="slot.isBooked || isSlotPassed(slot.startTime)"
             @click="toggleSlot(field.id, field.name, slot)"
           >
             <span class="slot-btn__time">{{ slot.startTime }} - {{ slot.endTime }}</span>
@@ -55,6 +55,7 @@
 
 <script setup lang="ts">
 import { mdiCalendarMonthOutline } from "@mdi/js"
+import dayjs from "dayjs"
 import type { FacilityDetailField, FacilityDetailSlot } from "~/types/facility"
 
 const props = defineProps<{
@@ -100,6 +101,27 @@ function getSlotClass(fieldId: number, slotId: string, isBooked: boolean) {
 
 function isSlotSelected(fieldId: number, slotId: string) {
   return fieldId === props.selectedFieldId && props.selectedSlotIds.includes(slotId)
+}
+
+function isSlotPassed(startTime: string) {
+  const now = dayjs()
+  const selected = dayjs(props.selectedDate)
+
+  // Nếu user lách luật chọn ngày trong quá khứ -> Disable tất
+  if (selected.isBefore(now, "day")) {
+    return true
+  }
+
+  if (selected.isSame(now, "day")) {
+    const [hours, minutes] = startTime.split(":").map(Number)
+    const slotTime = selected.hour(hours!).minute(minutes!).second(0)
+
+    // Nếu giờ bắt đầu đã lố giờ hiện tại thì disable
+    return slotTime.isBefore(now)
+  }
+
+  // Ngày tương lai thì ok
+  return false
 }
 </script>
 

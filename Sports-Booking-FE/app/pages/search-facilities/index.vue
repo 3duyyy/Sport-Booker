@@ -64,19 +64,23 @@ const filters = ref<SearchFilterValue>({
 const districtMap: Record<string, string> = {
   "ba-dinh": "Ba Đình",
   "hoan-kiem": "Hoàn Kiếm",
-  "dong-da": "Quận Đống Đa",
-  "cau-giay": "Quận Cầu Giấy",
-  "thanh-xuan": "Quận Thanh Xuân",
-  "hoang-mai": "Quận Hoàng Mai",
-  "long-bien": "Quận Long Biên",
-  "tay-ho": "Quận Tây Hồ",
+  "dong-da": "Đống Đa",
+  "cau-giay": "Cầu Giấy",
+  "thanh-xuan": "Thanh Xuân",
+  "hoang-mai": "Hoàng Mai",
+  "long-bien": "Long Biên",
+  "tay-ho": "Tây Hồ",
+  "nam-tu-liem": "Nam Từ Liêm",
+  "ha-dong": "Hà Đông",
+  "dong-anh": "Đông Anh",
 }
 
 const sportIdMap: Record<string, number> = {
   football: 1,
-  tennis: 2,
-  basketball: 3,
-  swimming: 4,
+  badminton: 2,
+  tennis: 3,
+  basketball: 4,
+  pickleball: 5,
 }
 
 const sortMap: Record<string, "newest" | "price_asc" | "price_desc" | "rating" | undefined> = {
@@ -84,6 +88,14 @@ const sortMap: Record<string, "newest" | "price_asc" | "price_desc" | "rating" |
   "price-desc": "price_desc",
   "rating-desc": "rating",
   recommended: undefined,
+}
+
+const amenityIdMap: Record<string, number> = {
+  wifi: 1,
+  parking: 2,
+  shower: 3,
+  equipment: 4,
+  canteen: 5,
 }
 
 const debouncedMinPrice = useDebounce(
@@ -100,6 +112,8 @@ const fetchFacilitiesFn = async () => {
 
   const mappedSportIds = filters.value.sports.map((s) => sportIdMap[s]).filter((s): s is number => Boolean(s))
 
+  const mappedUtilityIds = filters.value.amenities.map((a) => amenityIdMap[a]).filter((id): id is number => Boolean(id))
+
   const params: PublicFacilityQueryParams = {
     page: page.value,
     limit: perPage,
@@ -109,6 +123,7 @@ const fetchFacilitiesFn = async () => {
     ...(filters.value.maxPrice !== null && { maxPrice: filters.value.maxPrice }),
     ...(sortMap[sortBy.value] && { sort: sortMap[sortBy.value] }),
     ...(keywordFromQuery.value && { q: keywordFromQuery.value }),
+    ...(mappedUtilityIds.length > 0 && { utilityIds: mappedUtilityIds }),
   }
 
   const response = await facilityService.getPublicFacilities(params)

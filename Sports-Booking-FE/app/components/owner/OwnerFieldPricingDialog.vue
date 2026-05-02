@@ -71,11 +71,15 @@ const props = withDefaults(
     saving?: boolean
     viewMode?: boolean
     initialPricings?: OwnerFieldPricingItem[]
+    facilityOpenTime?: string
+    facilityCloseTime?: string
   }>(),
   {
     saving: false,
     viewMode: false,
     initialPricings: () => [],
+    facilityOpenTime: "00:00",
+    facilityCloseTime: "23:59",
   },
 )
 
@@ -154,6 +158,13 @@ const onSubmit = () => {
   if (!parsed.success) {
     errorText.value = parsed.error.issues[0]?.message ?? "Dữ liệu bảng giá không hợp lệ"
     return
+  }
+
+  for (const row of parsed.data.pricings) {
+    if (row.startTime < props.facilityOpenTime || row.endTime > props.facilityCloseTime) {
+      errorText.value = `Khung giờ ${row.startTime} - ${row.endTime} vượt ra ngoài giờ hoạt động của cụm sân (${props.facilityOpenTime} - ${props.facilityCloseTime})`
+      return
+    }
   }
 
   emit("submit", parsed.data)

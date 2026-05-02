@@ -151,7 +151,7 @@ const handleLogout = () => {
 
                   <v-divider class="my-2" />
 
-                  <v-list-item :prepend-icon="mdiAccountCircleOutline" title="Thông tin cá nhân" to="/tai-khoan" rounded="lg" />
+                  <v-list-item :prepend-icon="mdiAccountCircleOutline" title="Thông tin cá nhân" to="/profile" rounded="lg" />
                   <v-list-item :prepend-icon="mdiCalendarCheckOutline" title="Lịch đặt của tôi" to="/lich-dat" rounded="lg" />
                   <v-list-item :prepend-icon="mdiSoccer" title="Sân của tôi" to="/san-cua-toi" rounded="lg" />
 

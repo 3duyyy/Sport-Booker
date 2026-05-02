@@ -32,7 +32,10 @@
       />
 
       <div class="flex justify-end mb-6">
-        <NuxtLink to="/forgot-password" class="text-sm font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
+        <NuxtLink
+          to="/auth/forgot-password"
+          class="text-sm font-medium text-emerald-600 hover:text-emerald-500 transition-colors"
+        >
           Quên mật khẩu?
         </NuxtLink>
       </div>

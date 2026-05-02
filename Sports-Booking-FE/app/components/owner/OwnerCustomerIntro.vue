@@ -55,8 +55,10 @@ import { mdiSoccer, mdiCheckCircle } from "@mdi/js"
 
 const router = useRouter()
 
+const emit = defineEmits<{ (e: "create"): void }>()
+
 const handleCreateFacility = () => {
-  router.push("/chu-san/tao-san")
+  emit("create")
 }
 
 const handleGoHome = () => {
