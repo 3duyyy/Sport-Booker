@@ -36,6 +36,36 @@ export class RefreshTokenDto {
   refreshToken!: string
 }
 
+export class ForgotPasswordDto {
+  @IsNotEmpty({ message: 'Email không được để trống!' })
+  @IsString()
+  email!: string
+}
+
+export class VerifyOtpDto {
+  @IsNotEmpty()
+  @IsString()
+  email!: string
+
+  @IsNotEmpty({ message: 'OTP không được để trống' })
+  @IsString()
+  otp!: string
+}
+
+export class ResetPasswordDto {
+  @IsNotEmpty()
+  @IsString()
+  email!: string
+
+  @IsNotEmpty()
+  @IsString()
+  otp!: string
+
+  @IsNotEmpty({ message: 'Mật khẩu mới không được để trống' })
+  @IsString()
+  newPassword!: string
+}
+
 export class AuthResponseDto {
   id!: number
   email!: string

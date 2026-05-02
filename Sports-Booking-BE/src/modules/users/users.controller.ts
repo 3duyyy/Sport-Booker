@@ -8,6 +8,35 @@ const TAB_VALUES = ['all', 'pending_confirmation', 'upcoming', 'completed', 'can
 type BookingTabQuery = (typeof TAB_VALUES)[number]
 
 export class UserController {
+  static async getProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.id
+      const data = await UserService.getProfile(userId)
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  static async updateProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.id
+      const data = await UserService.updateProfile(userId, req.body)
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: 'Cập nhật thông tin thành công',
+        data
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
   static async getMyBookings(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.id

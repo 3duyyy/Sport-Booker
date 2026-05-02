@@ -53,6 +53,20 @@ export class UserService {
     return transactions.reduce((sum, tx) => sum + Number(tx.amount ?? 0), 0)
   }
 
+  static async getProfile(userId: number) {
+    const user = await UsersRepository.getProfile(userId)
+    if (!user) throw new AppError('Không tìm thấy người dùng', StatusCodes.NOT_FOUND)
+
+    return user
+  }
+
+  static async updateProfile(userId: number, data: any) {
+    const user = await UsersRepository.getProfile(userId)
+    if (!user) throw new AppError('Không tìm thấy người dùng', StatusCodes.NOT_FOUND)
+
+    return UsersRepository.updateProfile(userId, data)
+  }
+
   static async getMyBookings(userId: number, params: { page: number; limit: number; tab: BookingTab }) {
     const now = new Date()
     const result = await UsersRepository.findMyBookings({

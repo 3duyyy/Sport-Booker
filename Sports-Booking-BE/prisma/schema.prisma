@@ -92,6 +92,8 @@ model User {
   accountHolder String? @map("account_holder") @db.VarChar(100)
   status UserStatus @default(active)
   isVerified Boolean @default(false) @map("is_verified")
+  otpCode String?
+  otpExpiresAt DateTime?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(0)
   

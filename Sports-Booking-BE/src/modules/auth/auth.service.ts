@@ -1,11 +1,13 @@
 import { StatusCodes } from 'http-status-codes'
-import { LoginDto, RegisterDto } from '../../dtos/auth.dto'
+import { ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto, VerifyOtpDto } from '../../dtos/auth.dto'
 import { AppError } from '../../shared/exceptions'
 import { AuthRepository } from './auth.repository'
 import bcrypt from 'bcryptjs'
 import { BcryptUtil } from '../../shared/utils/bcryptUtil'
 import { JwtUtil } from '../../shared/utils/jwt'
 import { UsersRepository } from '../users/users.repository'
+import nodemailer from 'nodemailer'
+import { env } from '../../config/env.config'
 
 export class AuthService {
   static async register(registerDto: RegisterDto) {
@@ -131,5 +133,57 @@ export class AuthService {
   static async logoutAllDevices(userId: number) {
     await AuthRepository.revokeAllRefreshTokens(userId)
     return { message: 'Logout tất cả thiết bị thành công' }
+  }
+
+  static async forgotPassword({ email }: ForgotPasswordDto) {
+    const user = await UsersRepository.findByEmail(email)
+    if (!user) {
+      throw new AppError('Email không tồn tại trong hệ thống', StatusCodes.NOT_FOUND)
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString()
+    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000)
+
+    await UsersRepository.saveOtp(user.id, otpCode, otpExpiresAt)
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: env.EMAIL_USER,
+        pass: env.EMAIL_PASSWORD
+      }
+    })
+
+    await transporter.sendMail({
+      from: `"Sports Booker" <${env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Mã xác nhận khôi phục mật khẩu',
+      html: `Mã OTP của bạn là: <b style="font-size: 16px;">${otpCode}</b>. Mã này sẽ hết hạn sau 5 phút.`
+    })
+
+    return { message: 'Mã OTP đã gửi đến email của bạn!' }
+  }
+
+  static async verifyOtp({ email, otp }: VerifyOtpDto) {
+    const user = await UsersRepository.findByEmail(email)
+    if (!user || user.otpCode !== otp || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+      throw new AppError('Mã OTP không hợp lệ hoặc đã hết hạn', StatusCodes.BAD_REQUEST)
+    }
+
+    return { message: 'Xác nhận OTP thành công!' }
+  }
+
+  static async resetPassword({ email, otp, newPassword }: ResetPasswordDto) {
+    const user = await UsersRepository.findByEmail(email)
+
+    if (!user || user.otpCode !== otp || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+      throw new AppError('Mã OTP không hợp lệ hoặc đã hết hạn', StatusCodes.BAD_REQUEST)
+    }
+
+    const newPasswordHash = await BcryptUtil.hash(newPassword)
+
+    await UsersRepository.clearOtpAndResetPassword(user.id, newPasswordHash)
+
+    return { message: 'Đổi mật khẩu thành công!' }
   }
 }

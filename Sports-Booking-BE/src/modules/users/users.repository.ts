@@ -41,6 +41,25 @@ export class UsersRepository {
     return baseWhere
   }
 
+  static async getProfile(userId: number) {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        avatarUrl: true,
+        bankName: true,
+        bankAccount: true,
+        accountHolder: true,
+        role: {
+          select: { name: true }
+        }
+      }
+    })
+  }
+
   static async createUser(data: {
     email: string
     passwordHash: string
@@ -78,6 +97,30 @@ export class UsersRepository {
     })
   }
 
+  static async updateProfile(userId: number, data: any) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: data.fullName,
+        phone: data.phone,
+        avatarUrl: data.avatarUrl,
+        bankName: data.bankName,
+        bankAccount: data.bankAccount,
+        accountHolder: data.accountHolder
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        avatarUrl: true,
+        bankName: true,
+        bankAccount: true,
+        accountHolder: true
+      }
+    })
+  }
+
   static async findByEmail(email: string) {
     return prisma.user.findUnique({
       where: { email },
@@ -103,13 +146,6 @@ export class UsersRepository {
     return prisma.user.update({
       where: { id },
       data: { roleId: ROLES.OWNER }
-    })
-  }
-
-  static async updateProfile(id: number, data: { fullName?: string; phone?: string; avatarUrl?: string }) {
-    return prisma.user.update({
-      where: { id },
-      data: data
     })
   }
 
@@ -316,6 +352,24 @@ export class UsersRepository {
           updatedAt: true
         }
       })
+    })
+  }
+
+  static async saveOtp(userId: number, otpCode: string, otpExpiresAt: Date) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { otpCode, otpExpiresAt }
+    })
+  }
+
+  static async clearOtpAndResetPassword(userId: number, passwordHash: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash,
+        otpCode: null,
+        otpExpiresAt: null
+      }
     })
   }
 }

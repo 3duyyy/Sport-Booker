@@ -671,7 +671,7 @@ export class FacilitiesRepository {
   }
 
   static async findPublicFacilities(query: FacilityQueryDto) {
-    const { q, city, districts, page = 1, limit = 10, maxPrice, minPrice, sort, sportIds } = query
+    const { q, city, districts, page = 1, limit = 10, maxPrice, minPrice, sort, sportIds, utilityIds } = query
 
     const skip = (page - 1) * limit
 
@@ -680,7 +680,16 @@ export class FacilitiesRepository {
       ...(q && {
         OR: [{ name: { contains: q } }, { address: { contains: q } }, { district: { contains: q } }, { city: { contains: q } }]
       }),
-      ...(districts && districts.length > 0 && { districts: { in: districts } }),
+      ...(districts &&
+        districts.length > 0 && {
+          OR: districts.map((d) => ({ district: { contains: d } }))
+        }),
+      ...(utilityIds &&
+        utilityIds.length > 0 && {
+          facilityUtilities: {
+            some: { utilityId: { in: utilityIds } }
+          }
+        }),
       ...(city && { city }),
       ...(sportIds && sportIds.length > 0 && { sportId: { in: sportIds } }),
       ...((minPrice !== undefined || maxPrice !== undefined) && {

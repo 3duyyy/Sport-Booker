@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { FacilitiesController } from './facilities.controller'
 import { validationMiddleware } from '../../middlewares/validation.middleware'
-import { CreateFacilityDto } from '../../dtos/facilities.dto'
+import { CreateFacilityDto, FacilityQueryDto } from '../../dtos/facilities.dto'
 import { authMiddleware } from '../../middlewares/auth.middleware'
 
 const router = Router()

@@ -124,4 +124,40 @@ export class AuthController {
       next(error)
     }
   }
+
+  static async forgotPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await AuthService.forgotPassword(req.body)
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: result.message
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  static async verifyOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await AuthService.verifyOtp(req.body)
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: result.message
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  static async resetPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await AuthService.resetPassword(req.body)
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: result.message
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
 }

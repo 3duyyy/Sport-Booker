@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer'
+import { Transform, Type } from 'class-transformer'
 import { IsArray, IsBoolean, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator'
 import { PaginationDto } from './query.dto'
 
@@ -162,6 +162,7 @@ export class FacilityQueryDto extends PaginationDto {
   q?: string // search theo tên
 
   @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   @IsArray()
   @IsString({ each: true })
   districts?: string[]
@@ -171,6 +172,10 @@ export class FacilityQueryDto extends PaginationDto {
   city?: string
 
   @IsOptional()
+  @Transform(({ value }) => {
+    const arr = Array.isArray(value) ? value : [value]
+    return arr.map(Number).filter((n) => !isNaN(n))
+  })
   @IsArray()
   @IsNumber({}, { each: true })
   sportIds?: number[]
@@ -190,6 +195,15 @@ export class FacilityQueryDto extends PaginationDto {
   @IsOptional()
   @IsIn(['newest', 'rating', 'price_asc', 'price_desc'])
   sort?: string
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    const arr = Array.isArray(value) ? value : [value]
+    return arr.map(Number).filter((n) => !isNaN(n))
+  })
+  @IsArray()
+  @IsNumber({}, { each: true })
+  utilityIds?: number[]
 }
 
 export class OwnerCompleteCheckInDto {

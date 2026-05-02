@@ -411,7 +411,36 @@ export class FacilitiesController {
 
   static async getPublicFacilities(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await FacilitiesService.getPublicFacilities(req.query)
+      const { q, city, sort, page, limit, minPrice, maxPrice } = req.query
+
+      const districts = req.query.districts
+        ? Array.isArray(req.query.districts)
+          ? req.query.districts.map(String)
+          : [String(req.query.districts)]
+        : undefined
+
+      const sportIds = req.query.sportIds
+        ? (Array.isArray(req.query.sportIds) ? req.query.sportIds : [req.query.sportIds]).map(Number).filter((n) => !isNaN(n))
+        : undefined
+
+      const utilityIds = req.query.utilityIds
+        ? (Array.isArray(req.query.utilityIds) ? req.query.utilityIds : [req.query.utilityIds]).map(Number).filter((n) => !isNaN(n))
+        : undefined
+
+      const parsedParams = {
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 10,
+        ...(q ? { q: String(q) } : {}),
+        ...(city ? { city: String(city) } : {}),
+        ...(sort && ['newest', 'rating', 'price_asc', 'price_desc'].includes(String(sort)) ? { sort: String(sort) } : {}),
+        ...(minPrice ? { minPrice: Number(minPrice) } : {}),
+        ...(maxPrice ? { maxPrice: Number(maxPrice) } : {}),
+        ...(districts && districts.length > 0 ? { districts } : {}),
+        ...(sportIds && sportIds.length > 0 ? { sportIds } : {}),
+        ...(utilityIds && utilityIds.length > 0 ? { utilityIds } : {})
+      }
+
+      const result = await FacilitiesService.getPublicFacilities(parsedParams)
 
       res.status(StatusCodes.OK).json({
         success: true,

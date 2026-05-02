@@ -11,10 +11,11 @@ import {
   UpdateFieldDto
 } from '../../dtos/facilities.dto'
 import { FacilitiesController } from './facilities.controller'
+import { ROLES } from '../../shared/constants/roles'
 
 const router = Router()
 
-router.use(authMiddleware, AuthorizationMiddleware.ownerOnly())
+router.use(authMiddleware, AuthorizationMiddleware.roles(ROLES.OWNER, ROLES.CUSTOMER))
 
 router.get('/facilities', FacilitiesController.getMyFacilities)
 router.post('/facilities', validationMiddleware(CreateFacilityDto), FacilitiesController.createFacility)
